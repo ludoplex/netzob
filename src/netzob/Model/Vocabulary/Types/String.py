@@ -226,15 +226,17 @@ class String(AbstractType):
         # Convert value to bitarray
         if value is not None and not isinstance(value, bitarray):
 
-            # Check if value is correct, and normalize it in str object, and then in bitarray
-            if isinstance(value, str):
-                try:
-                    value = value.encode(self.encoding)
-                except Exception as e:
-                    raise ValueError("Input value for the following string is incorrect: '{}'. Error: '{}'".format(value, e))
-            else:
-                raise ValueError("Unsupported input format for value: '{}', type: '{}'".format(value, type(value)))
+            if not isinstance(value, str):
+                raise ValueError(
+                    f"Unsupported input format for value: '{value}', type: '{type(value)}'"
+                )
 
+            try:
+                value = value.encode(self.encoding)
+            except Exception as e:
+                raise ValueError(
+                    f"Input value for the following string is incorrect: '{value}'. Error: '{e}'"
+                )
             from netzob.Model.Vocabulary.Types.TypeConverter import TypeConverter
             from netzob.Model.Vocabulary.Types.BitArray import BitArray
             value = TypeConverter.convert(
@@ -251,15 +253,17 @@ class String(AbstractType):
         # Convert default value to bitarray
         if default is not None and not isinstance(default, bitarray):
 
-            # Check if value is correct, and normalize it in str object, and then in bitarray
-            if isinstance(default, str):
-                try:
-                    default = default.encode(self.encoding)
-                except Exception as e:
-                    raise ValueError("Input default value for the following string is incorrect: '{}'. Error: '{}'".format(default, e))
-            else:
-                raise ValueError("Unsupported input format for default value: '{}', type: '{}'".format(default, type(default)))
+            if not isinstance(default, str):
+                raise ValueError(
+                    f"Unsupported input format for default value: '{default}', type: '{type(default)}'"
+                )
 
+            try:
+                default = default.encode(self.encoding)
+            except Exception as e:
+                raise ValueError(
+                    f"Input default value for the following string is incorrect: '{default}'. Error: '{e}'"
+                )
             from netzob.Model.Vocabulary.Types.TypeConverter import TypeConverter
             from netzob.Model.Vocabulary.Types.BitArray import BitArray
             default = TypeConverter.convert(
@@ -290,12 +294,11 @@ class String(AbstractType):
 
     def __str__(self):
         if self.value is not None:
-            return "{}('{}')".format(self.typeName, self.value.tobytes().decode(self.encoding))
+            return f"{self.typeName}('{self.value.tobytes().decode(self.encoding)}')"
+        if self.size[0] == self.size[1]:
+            return f"{self.typeName}(nbChars={int(self.size[0] / 8)})"
         else:
-            if self.size[0] == self.size[1]:
-                return "{}(nbChars={})".format(self.typeName, int(self.size[0] / 8))
-            else:
-                return "{}(nbChars=({},{}))".format(self.typeName, int(self.size[0] / 8), int(self.size[1] / 8))
+            return f"{self.typeName}(nbChars=({int(self.size[0] / 8)},{int(self.size[1] / 8)}))"
 
     def _normalizeNbChars(self, nbChars):
         nbMinBits = None
@@ -337,12 +340,7 @@ class String(AbstractType):
         :rtype: :class:`Data <netzob.Model.Vocabulary.Domain.Variables.Leads.Data.Data>`
 
         """
-        scope = Scope.NONE
-
-        # Do not use constant when some EOS values has been set
-        if self.value is not None and not self.eos:
-            scope = Scope.CONSTANT
-
+        scope = Scope.NONE if self.value is None or self.eos else Scope.CONSTANT
         return Data(dataType=self, scope=scope)
 
     @public_api
@@ -366,16 +364,15 @@ class String(AbstractType):
 
         if self.value is not None:
             return 1
-        else:
-            range_min = int(self.size[0] / 8)
-            range_max = int(self.size[1] / 8)
-            permitted_values = len(string.printable)
-            count = 0
-            for i in range(range_min, range_max + 1):
-                count += permitted_values ** i
-                if count > AbstractType.MAXIMUM_POSSIBLE_VALUES:
-                    return AbstractType.MAXIMUM_POSSIBLE_VALUES
-            return count
+        range_min = int(self.size[0] / 8)
+        range_max = int(self.size[1] / 8)
+        permitted_values = len(string.printable)
+        count = 0
+        for i in range(range_min, range_max + 1):
+            count += permitted_values ** i
+            if count > AbstractType.MAXIMUM_POSSIBLE_VALUES:
+                return AbstractType.MAXIMUM_POSSIBLE_VALUES
+        return count
 
     def generate(self, generationStrategy=None):
         """Generates a random String that respects the requested size.
@@ -456,8 +453,7 @@ class String(AbstractType):
         elif any(self.size) and self.size[0] == self.size[1]:
             return self.size[0]
         else:
-            raise ValueError("Cannot determine a fixed size for type '{}'"
-                             .format(self))
+            raise ValueError(f"Cannot determine a fixed size for type '{self}'")
 
     @typeCheck(str)
     def mutate(self, prefixDescription=None):
@@ -493,11 +489,7 @@ class String(AbstractType):
         from netzob.Model.Vocabulary.Types.TypeConverter import TypeConverter
         from netzob.Model.Vocabulary.Types.BitArray import BitArray
 
-        if self.value is None:
-            val = self.generate()
-        else:
-            val = self.value
-
+        val = self.generate() if self.value is None else self.value
         strValue = TypeConverter.convert(val, BitArray, String)
 
         mutations = collections.OrderedDict()
@@ -591,14 +583,20 @@ class String(AbstractType):
                 try:
                     data = data.decode(self.encoding)
                 except Exception as e:
-                    raise ValueError("Input data for the following string is incorrect: '{}'. Error: '{}'".format(data, e))
+                    raise ValueError(
+                        f"Input data for the following string is incorrect: '{data}'. Error: '{e}'"
+                    )
             elif isinstance(data, str):
                 try:
                     data = data.encode(self.encoding)
                 except Exception as e:
-                    raise ValueError("Input data for the following string is incorrect: '{}'. Error: '{}'".format(data, e))
+                    raise ValueError(
+                        f"Input data for the following string is incorrect: '{data}'. Error: '{e}'"
+                    )
             else:
-                raise ValueError("Unsupported input format for data: '{}', type: '{}'".format(data, type(data)))
+                raise ValueError(
+                    f"Unsupported input format for data: '{data}', type: '{type(data)}'"
+                )
 
             from netzob.Model.Vocabulary.Types.TypeConverter import TypeConverter
             from netzob.Model.Vocabulary.Types.BitArray import BitArray
@@ -613,21 +611,15 @@ class String(AbstractType):
                 dst_endianness=self.endianness,
                 dst_sign=self.sign)
 
-        # Compare with self.value if it is defined
         if self.value is not None:
-            if len(self.eos) > 0:
-                for permitted_element in self.eos:
-                    tmp_value_bytes = self.value.tobytes() + permitted_element
-                    if tmp_value_bytes.decode(self.encoding) == data.tobytes().decode("utf_8"):
-                        return True
-                else:
-                    return False
-            else:
-                if self.value == data:
+            if len(self.eos) <= 0:
+                return self.value == data
+            for permitted_element in self.eos:
+                tmp_value_bytes = self.value.tobytes() + permitted_element
+                if tmp_value_bytes.decode(self.encoding) == data.tobytes().decode("utf_8"):
                     return True
-                else:
-                    return False
-
+            else:
+                return False
         # Else, compare with expected size
         if len(data) % 8 != 0:  # Ascii must be 8 bits modulo length
             return False
@@ -690,7 +682,7 @@ class String(AbstractType):
 
         # Verify that data is a bytes object
         if not isinstance(data, bytes):
-            raise TypeError("Data '{}' should be a bytes object".format(data))
+            raise TypeError(f"Data '{data}' should be a bytes object")
 
         return data
 
@@ -722,13 +714,10 @@ class String(AbstractType):
         if data is None:
             raise TypeError("data cannot be None")
 
-        res = ""
-        for ordElt in data:
-            if ordElt >= 0x20 and ordElt <= 0x7e:  # means between ' ' and '~'
-                res += chr(ordElt)
-            else:
-                res += "."
-
+        res = "".join(
+            chr(ordElt) if ordElt >= 0x20 and ordElt <= 0x7E else "."
+            for ordElt in data
+        )
         return res.encode()
 
     @property
@@ -749,7 +738,7 @@ class String(AbstractType):
         try:
             codecs.lookup(encoding)
         except LookupError:
-            raise ValueError("Wrong encoding specified: '{}'".format(encoding))
+            raise ValueError(f"Wrong encoding specified: '{encoding}'")
         self.__encoding = encoding
 
     @property
@@ -770,25 +759,23 @@ class String(AbstractType):
 
         size_elt = None
         for elt in eos:
-            # Check that each element is a string
-            if isinstance(elt, str):
-
-                # Check if element is correct, and normalize it in str object, and then in bitarray
-                try:
-                    elt = elt.encode(self.encoding)
-                except Exception as e:
-                    raise ValueError("Input value for the following string is incorrect: '{}'. Error: '{}'".format(elt, e))
-
-                eos_list.append(elt)
-            else:
+            if not isinstance(elt, str):
                 raise Exception("'eos' parameter must be a string list")
 
+                # Check if element is correct, and normalize it in str object, and then in bitarray
+            try:
+                elt = elt.encode(self.encoding)
+            except Exception as e:
+                raise ValueError(
+                    f"Input value for the following string is incorrect: '{elt}'. Error: '{e}'"
+                )
+
+            eos_list.append(elt)
             # Check that each string element have the same size
             if size_elt is None:
                 size_elt = len(elt)
-            else:
-                if size_elt != len(elt):
-                    raise Exception("'eos' parameter must be a string list of the same size")
+            elif size_elt != len(elt):
+                raise Exception("'eos' parameter must be a string list of the same size")
 
         self.__eos = eos_list
 

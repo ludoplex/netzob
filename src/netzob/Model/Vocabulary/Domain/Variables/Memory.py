@@ -122,7 +122,7 @@ class Memory(object):
     @public_api
     def __init__(self):
         """Constructor of Memory"""
-        self.memory = dict()
+        self.memory = {}
         self.__memoryAccessCB = None
 
     @public_api
@@ -153,7 +153,9 @@ class Memory(object):
             b_value.frombytes(value)
             self.memory[variable] = b_value
         else:
-            raise TypeError("value parameter of memorize() method should a bitarray or a bytes, not a '{}'".format(type(value)))
+            raise TypeError(
+                f"value parameter of memorize() method should a bitarray or a bytes, not a '{type(value)}'"
+            )
 
     @public_api
     @typeCheck(AbstractVariable)
@@ -217,10 +219,10 @@ class Memory(object):
 
         """
 
-        for variable in self.memory.keys():
-            if variable.name == name:
-                return variable
-        return None
+        return next(
+            (variable for variable in self.memory.keys() if variable.name == name),
+            None,
+        )
 
     @public_api
     @typeCheck(AbstractVariable)
@@ -292,10 +294,10 @@ class Memory(object):
         self.memory = memory
 
     def __str__(self):
-        result = []
-        for var, value in list(self.memory.items()):
-            result.append("{} from field '{}': {}".format(
-                var, var.field, TypeConverter.convert(value, BitArray, Raw)))
+        result = [
+            f"{var} from field '{var.field}': {TypeConverter.convert(value, BitArray, Raw)}"
+            for var, value in list(self.memory.items())
+        ]
         return '\n'.join(result)
 
     def __len__(self):
@@ -311,6 +313,6 @@ class Memory(object):
 
     @memory.setter  # type: ignore
     def memory(self, memory):
-        self.__memory = dict()
+        self.__memory = {}
         for k, v in list(memory.items()):
             self.__memory[k] = v

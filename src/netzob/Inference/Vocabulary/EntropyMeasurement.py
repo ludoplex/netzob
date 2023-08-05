@@ -136,7 +136,7 @@ class EntropyMeasurement(object):
             raise Exception("At least one value must be provided")
 
         # computes longuest message
-        longuest = max([len(value) for value in values])
+        longuest = max(len(value) for value in values)
 
         for i_byte in range(longuest):
 

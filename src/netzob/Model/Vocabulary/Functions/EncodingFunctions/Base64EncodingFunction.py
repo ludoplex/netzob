@@ -114,11 +114,11 @@ class Base64EncodingFunction(EncodingFunction):
     def encode(self, data):
         data_raw = TypeConverter.convert(data,BitArray,Raw)
         result = None
-        if self.encode_data:
-            result = base64.b64encode(data_raw)
-        else:
-            result = base64.b64decode(data_raw)
-        return result
+        return (
+            base64.b64encode(data_raw)
+            if self.encode_data
+            else base64.b64decode(data_raw)
+        )
 
     def priority(self):
         """Returns the priority of the current encoding filter."""

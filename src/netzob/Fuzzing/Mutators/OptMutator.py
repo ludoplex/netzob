@@ -144,14 +144,15 @@ class OptMutator(DomainMutator):
             mutator, mutator_default_parameters = v
             copy_mappingTypesMutators[k] = mutator_default_parameters
 
-        m = OptMutator(self.domain,
-                       mode=self.mode,
-                       generator=self.generator,
-                       seed=self.seed,
-                       counterMax=self.counterMax,
-                       mutateChild=self.mutateChild,
-                       mappingTypesMutators=copy_mappingTypesMutators)
-        return m
+        return OptMutator(
+            self.domain,
+            mode=self.mode,
+            generator=self.generator,
+            seed=self.seed,
+            counterMax=self.counterMax,
+            mutateChild=self.mutateChild,
+            mappingTypesMutators=copy_mappingTypesMutators,
+        )
 
     def count(self, preset=None):
         r"""
@@ -165,14 +166,9 @@ class OptMutator(DomainMutator):
 
         if self.mode == FuzzingMode.FIXED:
             return AbstractType.MAXIMUM_POSSIBLE_VALUES
-        else:
-
-            # Handle count() of children
-            count = self.domain.children[0].count(preset=preset)
-            if count > AbstractType.MAXIMUM_POSSIBLE_VALUES:
-                return AbstractType.MAXIMUM_POSSIBLE_VALUES
-            else:
-                return count
+        # Handle count() of children
+        count = self.domain.children[0].count(preset=preset)
+        return min(count, AbstractType.MAXIMUM_POSSIBLE_VALUES)
 
     @property
     def mutateChild(self):
@@ -227,10 +223,7 @@ class OptMutator(DomainMutator):
         else:
 
             # Randomely decide if we create a transition
-            if next(self.generator) % 2 == 0:
-                return 0
-            else:
-                return 1
+            return 0 if next(self.generator) % 2 == 0 else 1
 
 
 def _test_fixed():

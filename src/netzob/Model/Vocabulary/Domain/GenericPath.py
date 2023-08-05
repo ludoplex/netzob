@@ -79,7 +79,7 @@ class GenericPath(object):
         self._inaccessibleVariables = []
 
     def __str__(self):
-        return "Path({})".format(str(id(self)))
+        return f"Path({id(self)})"
 
     def addResult(self, variable, result, notify=True):
         """
@@ -132,10 +132,8 @@ class GenericPath(object):
             return self._dataAssignedToVariable[variable]
         else:
             raise Exception(
-                "In path '{}', no data assigned to variable '{}' (id={}), which is linked to field '{}'".format(self,
-                                                                                                                variable,
-                                                                                                                id(variable),
-                                                                                                                variable.field))
+                f"In path '{self}', no data assigned to variable '{variable}' (id={id(variable)}), which is linked to field '{variable.field}'"
+            )
 
     def hasData(self, variable):
         """Return True if a data has been assigned to the specified variable.
@@ -143,10 +141,7 @@ class GenericPath(object):
 
         if variable is None:
             raise Exception("Variable cannot be None")
-        if variable in self._dataAssignedToVariable:
-            return True
-        else:
-            return False
+        return variable in self._dataAssignedToVariable
 
     def getDataInMemory(self, variable):
         """Return the data that is assigned to the specified variable in the memory.
@@ -167,10 +162,8 @@ class GenericPath(object):
         if self.memory is not None and self.memory.hasValue(variable):
             return self.memory.getValue(variable)
         raise Exception(
-            "In path '{}', no data assigned to variable '{}' (id={}), which is linked to field '{}'".format(self,
-                                                                                                            variable,
-                                                                                                            id(variable),
-                                                                                                            variable.field))
+            f"In path '{self}', no data assigned to variable '{variable}' (id={id(variable)}), which is linked to field '{variable.field}'"
+        )
 
     def hasDataInMemory(self, variable):
         """Return True if a data has been assigned to the specified variable in the memory.
@@ -178,10 +171,7 @@ class GenericPath(object):
 
         if variable is None:
             raise Exception("Variable cannot be None")
-        if self.memory is not None:
-            return self.memory.hasValue(variable)
-        else:
-            return False
+        return self.memory.hasValue(variable) if self.memory is not None else False
 
     def assignData(self, data, variable):
         """Assign a data to the specified variable.
@@ -199,7 +189,7 @@ class GenericPath(object):
         self._dataAssignedToVariable[variable] = data
 
     def removeData(self, variable):
-        self._logger.debug("Remove assigned data to variable: {}".format(variable))
+        self._logger.debug(f"Remove assigned data to variable: {variable}")
         if variable is None:
             raise Exception("Variable cannot be None")
 
@@ -209,7 +199,9 @@ class GenericPath(object):
     def removeDataRecursively(self, variable):
         from netzob.Model.Vocabulary.Domain.Variables.Nodes.Agg import SELF
 
-        self._logger.debug("Remove assigned data to variable (and its children): {}".format(variable))
+        self._logger.debug(
+            f"Remove assigned data to variable (and its children): {variable}"
+        )
         if variable is None:
             raise Exception("Variable cannot be None")
 
@@ -222,15 +214,15 @@ class GenericPath(object):
         if hasattr(variable, 'children'):
             for child in variable.children:
                 # We check if we reach the recursive pattern 'SELF' (in such case, no propagation is needed)
-                if type(child) == type and child == SELF:
-                    pass
-                else:
+                if type(child) != type or child != SELF:
                     self.removeDataRecursively(child)
 
     def setInaccessibleVariableRecursively(self, variable):
         from netzob.Model.Vocabulary.Domain.Variables.Nodes.Agg import SELF
 
-        self._logger.debug("Set the variable (and its children) inaccessible: {}".format(variable))
+        self._logger.debug(
+            f"Set the variable (and its children) inaccessible: {variable}"
+        )
         if variable is None:
             raise Exception("Variable cannot be None")
 
@@ -239,9 +231,7 @@ class GenericPath(object):
         if hasattr(variable, 'children'):
             for child in variable.children:
                 # We check if we reach the recursive pattern 'SELF' (in such case, no propagation is needed)
-                if type(child) == type and child == SELF:
-                    pass
-                else:
+                if type(child) != type or child != SELF:
                     self.setInaccessibleVariableRecursively(child)
 
     def isVariableInaccessible(self, variable):
@@ -250,10 +240,7 @@ class GenericPath(object):
 
         if variable is None:
             raise Exception("Variable cannot be None")
-        if variable in self._inaccessibleVariables:
-            return True
-        else:
-            return False
+        return variable in self._inaccessibleVariables
 
     def registerVariablesCallBack(self, targetVariables, currentVariable, parsingCB=True):
         if targetVariables is None:
@@ -283,7 +270,9 @@ class GenericPath(object):
         callbacks_to_execute = []
         potentialCallback = None
         tested_callbacks = []
-        self._logger.debug("Number of callbacks to analyze: {}".format(len(self._variablesCallbacks)))
+        self._logger.debug(
+            f"Number of callbacks to analyze: {len(self._variablesCallbacks)}"
+        )
 
         for potentialCallback in self._variablesCallbacks:
             self._logger.debug("Testing a new callback")
@@ -309,17 +298,12 @@ class GenericPath(object):
                 potentialCallback = None
                 continue
 
-            # Test if triggeringVariable may help in computing the
-            # callback (i.e. it is in the list of the targeted
-            # variables of the currentVariable)
-            found = False
-            for v in targetVariables:
-                if v == triggeringVariable:
-                    found = True
-                    break
+            found = any(v == triggeringVariable for v in targetVariables)
             if found:
-                self._logger.debug("Found a callback on '{}' that should be able to be computed due to triggering variable '{}' from field '{}'".format(currentVariable, triggeringVariable, triggeringVariable.field))
-                #break
+                self._logger.debug(
+                    f"Found a callback on '{currentVariable}' that should be able to be computed due to triggering variable '{triggeringVariable}' from field '{triggeringVariable.field}'"
+                )
+                        #break
             else:
 
                 # Current callback is considered if there exists
@@ -335,7 +319,11 @@ class GenericPath(object):
                     # - We don't consider parsing mode
                     # - We verify that the set of common target variables is not empty
                     common_target_variables = list(set(inner_targetVariables).intersection(targetVariables))
-                    if not inner_parsingCB and not isinstance(currentVariable, Repeat) and len(common_target_variables) > 0:
+                    if (
+                        not inner_parsingCB
+                        and not isinstance(currentVariable, Repeat)
+                        and common_target_variables
+                    ):
                         found = True
                         break
                 if found:
@@ -343,7 +331,9 @@ class GenericPath(object):
                         potentialCallback = None
                         continue
                     else:
-                        self._logger.debug("Found a callback on '{}' that should be able to be computed due to indirect triggering variable '{}' from field '{}'".format(currentVariable, triggeringVariable, triggeringVariable.field))
+                        self._logger.debug(
+                            f"Found a callback on '{currentVariable}' that should be able to be computed due to indirect triggering variable '{triggeringVariable}' from field '{triggeringVariable.field}'"
+                        )
                 else:
                     self._logger.debug("Callback not concerned by the triggering variable")
                     potentialCallback = None
@@ -353,9 +343,9 @@ class GenericPath(object):
                 callbacks_to_execute.append(potentialCallback)
 
         last_callback_succeed = True
-        if len(callbacks_to_execute) > 0:
+        if callbacks_to_execute:
             from netzob.Model.Vocabulary.Domain.Variables.Leafs.AbstractRelationVariableLeaf import RelationDependencyException
-            while len(callbacks_to_execute) > 0:
+            while callbacks_to_execute:
                 callback_to_execute = callbacks_to_execute.pop()
                 try:
                     # Add current callback to a list of callbacks that are currently being executed (recursively).
@@ -411,9 +401,11 @@ class GenericPath(object):
         return (True, resultingPaths)
 
     def show(self):
-        self._logger.debug("Variables registered for genericPath: '{}':".format(self))
+        self._logger.debug(f"Variables registered for genericPath: '{self}':")
         for (var, val) in self._dataAssignedToVariable.items():
-            self._logger.debug("  [+] Variable: '{}' (id={}), with value: '{}', is linked to field '{}'".format(var, id(var), val.tobytes(), var.field))
+            self._logger.debug(
+                f"  [+] Variable: '{var}' (id={id(var)}), with value: '{val.tobytes()}', is linked to field '{var.field}'"
+            )
 
     @property
     def name(self):

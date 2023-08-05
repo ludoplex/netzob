@@ -201,8 +201,9 @@ class FieldParser():
         # check we have something to parse
         data = parsingPath.getData(self.field.domain)
 
-        self._logger.debug("Parse '{}' with field '{}' specifications".
-                           format(data.tobytes(), self.field.name))
+        self._logger.debug(
+            f"Parse '{data.tobytes()}' with field '{self.field.name}' specifications"
+        )
 
         # we assign this data to the field's variable
         parsingPath.assignData(data.copy(), self.field.domain)

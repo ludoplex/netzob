@@ -76,7 +76,7 @@ class ScapyExporter(object):
 
 
         def exportToScapy(self, filename):
-            """ The function walks through all the fields in each of the symbols, checks their dataType (Raw, Integer, ASCII, BitArray, HexaString, TimeStamp, IPv4), field type (constant or variable) and size. Based on this information creates a scapy executable python script.
+                """ The function walks through all the fields in each of the symbols, checks their dataType (Raw, Integer, ASCII, BitArray, HexaString, TimeStamp, IPv4), field type (constant or variable) and size. Based on this information creates a scapy executable python script.
             Netzob datatype fields has been matched to Scapy fields in the following way:
                 Integer    ---> ByteField, ShortField, SignedShortField, LEShortField, IntField, SignedIntField, LEIntField, LESignedIntField, LongField or LELongField, depending on the unitSize(8,16,32,64), SignedType(Signed or Unsigned) and/or endianness (Big or Little) 
                 IPv4       ---> IPField
@@ -117,34 +117,34 @@ class ScapyExporter(object):
             b'some\\x00\\x00\\x00\\x00\\xca\\xff\\xeemessage'
             """
 
-            protocolName = self._protocolName
-            symbols = self._symbols
+                protocolName = self._protocolName
+                symbols = self._symbols
 
-            sfilecontents = '' # contents for export file are initally written to this variable 
-            sfilecontents += "#! /usr/bin/python" + '\n'
-            sfilecontents += "from scapy.all import *" + '\n'
-            sfilecontents += "from netaddr import IPAddress" + '\n'
-            sfilecontents += "from bitarray import bitarray" + '\n\n'
+                sfilecontents = '' # contents for export file are initally written to this variable 
+                sfilecontents += "#! /usr/bin/python" + '\n'
+                sfilecontents += "from scapy.all import *" + '\n'
+                sfilecontents += "from netaddr import IPAddress" + '\n'
+                sfilecontents += "from bitarray import bitarray" + '\n\n'
 
-            for i in range(0,len(symbols)):
-                syml = symbols[i]
-                sfilecontents += "# === Start of new PROTOCOL from Symbol{}\n".format(syml.name)
-                sfilecontents += "class {}_{}{:d} (Packet):\n".format(protocolName, syml.name, i)
-                sfilecontents += "\tname = \"{}\"\n".format(protocolName)
-                sfilecontents += "\tfields_desc = [ \n"
-                for field in syml.fields:
-                    try:
-                       sfilecontents += self._check_dataType(field) + '\n'
-                    except AttributeError:
-                       sfilecontents += "\t\t\t BitField(" + "\"" + field.name + "\","+repr(None)+ "," \
-                                        + repr(self._aggDomain(field.domain)[1]) + ")," \
-                                        + "\t#size:" + str(self._aggDomain(field.domain)) + '\n'
+                for i in range(0,len(symbols)):
+                        syml = symbols[i]
+                        sfilecontents += f"# === Start of new PROTOCOL from Symbol{syml.name}\n"
+                        sfilecontents += "class {}_{}{:d} (Packet):\n".format(protocolName, syml.name, i)
+                        sfilecontents += f'\tname = \"{protocolName}\"\n'
+                        sfilecontents += "\tfields_desc = [ \n"
+                        for field in syml.fields:
+                            try:
+                               sfilecontents += self._check_dataType(field) + '\n'
+                            except AttributeError:
+                               sfilecontents += "\t\t\t BitField(" + "\"" + field.name + "\","+repr(None)+ "," \
+                                                        + repr(self._aggDomain(field.domain)[1]) + ")," \
+                                                        + "\t#size:" + str(self._aggDomain(field.domain)) + '\n'
 
-                sfilecontents += "\t\t ]" + '\n'
+                        sfilecontents += "\t\t ]" + '\n'
 
-            with open(filename,'w') as f:
-                    f.write(sfilecontents)
-                    f.close()
+                with open(filename,'w') as f:
+                        f.write(sfilecontents)
+                        f.close()
 
         def __recalculateFieldLengths(self):
             """
@@ -460,8 +460,8 @@ class ScapyExporter(object):
                 """
 
                 # Workaround for empty Netzob fields which erroneously receive a maximum size of 8 bits
-                if max([len(f6v) for f6v in field.getValues()]) == 0:
-                    return '' # return an empty string to effectively skip this field
+                if max(len(f6v) for f6v in field.getValues()) == 0:
+                        return '' # return an empty string to effectively skip this field
 
                 switcher = {
                         'Integer'   : ScapyExporter._dataType_integer,

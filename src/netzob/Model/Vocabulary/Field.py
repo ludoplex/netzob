@@ -297,13 +297,7 @@ class Field(AbstractField):
             self.domain = Raw()
         elif isinstance(domain, list):  # Check if domain is a list of fields
 
-            # Check if each domain element is of type Field
-            is_domain_list_of_fields = True
-            for elt in domain:
-                if not isinstance(elt, Field):
-                    is_domain_list_of_fields = False
-                    break
-
+            is_domain_list_of_fields = all(isinstance(elt, Field) for elt in domain)
             if is_domain_list_of_fields:
                 self.fields = domain
                 self.domain = None
@@ -376,13 +370,12 @@ class Field(AbstractField):
              |--   Data (Raw(nbBytes=14))
 
         """
-        tab = ["|--  " for x in range(deepness)]
+        tab = ["|--  " for _ in range(deepness)]
         tab.append(str(self.name))
         lines = [''.join(tab)]
         if len(self.fields) == 0:
             lines.append(self.domain.str_structure(preset, deepness + 1))
-        for f in self.fields:
-            lines.append(f.str_structure(preset, deepness + 1))
+        lines.extend(f.str_structure(preset, deepness + 1) for f in self.fields)
         return '\n'.join(lines)
 
     def getVariables(self):
@@ -451,7 +444,7 @@ class Field(AbstractField):
         if len(self.fields) > 0:
             for field in self.getLeafFields(includePseudoFields=True):
                 if field.domain is not None and isinstance(field.domain, AbstractRelationVariableLeaf):
-                    self._logger.debug("Normalize field targets for field '{}'".format(field.name))
+                    self._logger.debug(f"Normalize field targets for field '{field.name}'")
                     field.domain.normalize_targets()
 
         from netzob.Model.Vocabulary.Domain.Specializer.FieldSpecializer import FieldSpecializer
@@ -464,7 +457,9 @@ class Field(AbstractField):
         for specializing_path in specializing_paths:
             data = specializing_path.getData(self.domain)
             if len(data) % 8 != 0:
-                raise GenerationException("specialize() produced {} bits, which is not aligned on 8 bits. You should review the field model.".format(len(data)))
+                raise GenerationException(
+                    f"specialize() produced {len(data)} bits, which is not aligned on 8 bits. You should review the field model."
+                )
             yield data.tobytes()
 
     @public_api

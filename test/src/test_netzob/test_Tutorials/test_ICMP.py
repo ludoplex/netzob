@@ -78,6 +78,6 @@ class test_ICMP(NetzobTestCase):
 
         ping = Symbol([pingHeader, pingPayload])
 
-        ping.messages = [RawMessage(ping.specialize()) for i in range(0, 20)]
+        ping.messages = [RawMessage(ping.specialize()) for _ in range(0, 20)]
         cells = ping.getCells()
         print(cells)

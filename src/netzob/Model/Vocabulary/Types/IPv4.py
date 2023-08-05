@@ -147,15 +147,19 @@ class IPv4(AbstractType):
         if value is not None and isinstance(value, IPAddress):
             value = str(value)
 
-        if value is not None and not (isinstance(value, str) or isinstance(value, bitarray)):
-            raise ValueError("An IPv4 value parameter should either be a str, a netaddr.IPAddress or a bitarray, but not a '{}'".format(type(value)))
+        if value is not None and not isinstance(value, (str, bitarray)):
+            raise ValueError(
+                f"An IPv4 value parameter should either be a str, a netaddr.IPAddress or a bitarray, but not a '{type(value)}'"
+            )
 
         # Manage default parameter
         if default is not None and isinstance(default, IPAddress):
             default = str(default)
 
-        if default is not None and not (isinstance(default, str) or isinstance(default, bitarray)):
-            raise ValueError("An IPv4 default parameter should either be a str, a netaddr.IPAddress or a bitarray, but not a '{}'".format(type(default)))
+        if default is not None and not isinstance(default, (str, bitarray)):
+            raise ValueError(
+                f"An IPv4 default parameter should either be a str, a netaddr.IPAddress or a bitarray, but not a '{type(default)}'"
+            )
 
         # Manage conversions
         if value is not None and not isinstance(value, bitarray):
@@ -186,10 +190,9 @@ class IPv4(AbstractType):
                 dst_endianness=endianness,
                 dst_sign=sign)
 
-        self.network = network
-
         size = (0, 1 << unitSize.value)
 
+        self.network = network
         super(IPv4, self).__init__(
             self.__class__.__name__,
             value,
@@ -201,11 +204,11 @@ class IPv4(AbstractType):
 
     def __str__(self):
         if self.value is not None:
-            return "{}(\"{}\")".format(self.typeName, IPv4.encode(self.value.tobytes()))
+            return f'{self.typeName}(\"{IPv4.encode(self.value.tobytes())}\")'
         elif self.network is not None:
-            return "{}(\"{}\")".format(self.typeName, self.network)
+            return f'{self.typeName}(\"{self.network}\")'
         else:
-            return "{}()".format(self.typeName)
+            return f"{self.typeName}()"
 
     @public_api
     def count(self):
@@ -228,10 +231,11 @@ class IPv4(AbstractType):
 
         if self.value is not None:
             return 1
-        if self.network is not None:
-            return self.network.size
-        else:
-            return (1 << self.unitSize.value)
+        return (
+            (1 << self.unitSize.value)
+            if self.network is None
+            else self.network.size
+        )
 
     def getMinStorageValue(self):
             return 0
@@ -424,13 +428,14 @@ class IPv4(AbstractType):
 
     @network.setter  # type: ignore
     def network(self, network):
-        if network is not None:
-            if not self._isValidIPv4Network(network):
-                raise TypeError(
-                    "Specified network constraints is not valid IPv4 Network.")
-            self.__network = IPNetwork(network)
-        else:
+        if network is None:
             self.__network = None
+
+        elif not self._isValidIPv4Network(network):
+            raise TypeError(
+                "Specified network constraints is not valid IPv4 Network.")
+        else:
+            self.__network = IPNetwork(network)
 
     @staticmethod
     def decode(data,
@@ -453,7 +458,7 @@ class IPv4(AbstractType):
             try:
                 ip = IPAddress(data)
             except Exception as e:
-                raise TypeError("Data is not a valid IPv4, cannot decode it. Error: '{}'".format(e))
+                raise TypeError(f"Data is not a valid IPv4, cannot decode it. Error: '{e}'")
             return ip.packed
 
     @staticmethod
@@ -476,15 +481,9 @@ class IPv4(AbstractType):
                 pass
         elif isinstance(data, bytes):
             try:
-                structFormat = "<"
-                if endianness == Endianness.BIG:
-                    structFormat = ">"
-
-                if not sign == Sign.SIGNED:
-                    structFormat += "bbbb"
-                else:
-                    structFormat += "BBBB"
-
+                structFormat = (">" if endianness == Endianness.BIG else "<") + (
+                    "bbbb" if sign != Sign.SIGNED else "BBBB"
+                )
                 quads = list(map(str, struct.unpack(structFormat, data)))
                 strIP = '.'.join(quads)
 
@@ -496,7 +495,9 @@ class IPv4(AbstractType):
                 raise TypeError("Impossible to encode {0} into an IPv4 data ({1})".
                                 format(data, e))
         else:
-            raise TypeError("Wrong data type for encode(). Expected str or bytes, got '{}'".format(type(data)))
+            raise TypeError(
+                f"Wrong data type for encode(). Expected str or bytes, got '{type(data)}'"
+            )
 
     def getFixedBitSize(self):
         self._logger.debug("Determine the deterministic size of the value of "

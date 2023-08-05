@@ -113,13 +113,15 @@ class ActiveGrammarInferer(Thread):
             start_ts = time.time()
             self.infered_automata = self.lstar.learn()
             duration = time.time() - start_ts
-            self._logger.info("Inference process finished ({}s)".format(duration))
-            
-            
+            self._logger.info(f"Inference process finished ({duration}s)")
+                    
+
         finally:
             try:
                 self.process_wrapper.stop(force=True)
             except Exception as e:
-                self._logger.info("Encountered the following error while stoping the process wrapper: {}".format(e))
+                self._logger.info(
+                    f"Encountered the following error while stoping the process wrapper: {e}"
+                )
 
         

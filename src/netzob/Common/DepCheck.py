@@ -41,10 +41,7 @@ class DepCheck(object):
     @staticmethod
     def checkRequiredDependency():
         # Check the C extensions
-        if not DepCheck.checkCExtensions():
-            return False
-
-        return True
+        return bool(DepCheck.checkCExtensions())
 
     @staticmethod
     def checkCExtensions():
@@ -63,7 +60,7 @@ class DepCheck(object):
                               pathToImportedLib)
         try:
             BIDNeedleman = _libNeedleman.getBID()
-            if BIDNeedleman != NetzobResources.BID and NetzobResources.BID != "$BID":
+            if BIDNeedleman != NetzobResources.BID != "$BID":
                 logging.error("Binary Identifier is %s (expected %s).",
                               BIDNeedleman, NetzobResources.BID)
                 logging.error(
@@ -92,7 +89,7 @@ class DepCheck(object):
                               pathToImportedLib)
         try:
             BIDScoreComputation = _libScoreComputation.getBID()
-            if BIDScoreComputation != NetzobResources.BID and NetzobResources.BID != "$BID":
+            if BIDScoreComputation != NetzobResources.BID != "$BID":
                 logging.error("Binary Identifier is %s (expected %s).",
                               BIDScoreComputation, NetzobResources.BID)
                 logging.error(
@@ -120,7 +117,7 @@ class DepCheck(object):
                               pathToImportedLib)
         try:
             BIDInterface = _libInterface.getBID()
-            if BIDInterface != NetzobResources.BID and NetzobResources.BID != "$BID":
+            if BIDInterface != NetzobResources.BID != "$BID":
                 logging.error("Binary Identifier is %s (expected %s).",
                               BIDInterface, NetzobResources.BID)
                 logging.error(

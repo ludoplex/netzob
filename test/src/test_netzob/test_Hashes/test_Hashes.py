@@ -47,7 +47,7 @@ class test_Hashes(unittest.TestCase):
                 msg = line[6:-1]
             elif 'MD =' in line:
                 if len(msg) != given_len:
-                    msg = msg[0 : given_len]
+                    msg = msg[:given_len]
                 if 'MD5' in file:
                     msg = msg.encode().hex()
                 self.check_res(msg, line[5:-1], hash_class)

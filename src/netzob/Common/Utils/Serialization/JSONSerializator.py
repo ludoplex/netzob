@@ -68,11 +68,11 @@ class JSONSerializator(object):
             raise TypeError("Cannot serialize a None object")
 
         typeObj = type(obj)
-        props = []
-        for entry in list(typeObj.__dict__.values()):
-            if inspect.isdatadescriptor(entry):
-                props.append(entry)
-
+        props = [
+            entry
+            for entry in list(typeObj.__dict__.values())
+            if inspect.isdatadescriptor(entry)
+        ]
         for prop in props:
             print(prop.fget.__name__, prop.fget)
 

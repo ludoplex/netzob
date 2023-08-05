@@ -127,7 +127,7 @@ def NetzobLogger(klass):
 
     # Exclude logger from __getstate__
     def getState(self, **kwargs):
-        r = dict()
+        r = {}
         for k, v in list(self.__dict__.items()):
             if not isinstance(v, logging.Logger):
                 r[k] = v
@@ -189,9 +189,7 @@ def typeCheck(*types):
                                               ]), argument.__class__.__name__))
             return func(*args, **kwargs)
 
-        if 'NETZOB_NO_TYPECHECK' in os.environ:
-            return func
-        return wraps(func)(wrapped_f)
+        return func if 'NETZOB_NO_TYPECHECK' in os.environ else wraps(func)(wrapped_f)
 
     return _typeCheck_
 

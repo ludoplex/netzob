@@ -112,18 +112,9 @@ class ClusterByApplicativeData(object):
                     "At least one applicative data ({0}) is not an instance of ApplicativeData.".
                     format(str(appData)))
 
-        labels = dict()
-        for appData in appDatas:
-            labels[appData.value] = appData.name
-
-        idMessages = dict()
-        for message in messages:
-            idMessages[message.id] = message
-
-        messagesPerAppData = dict()
-        for message in messages:
-            messagesPerAppData[message] = set()
-
+        labels = {appData.value: appData.name for appData in appDatas}
+        idMessages = {message.id: message for message in messages}
+        messagesPerAppData = {message: set() for message in messages}
         searchEngine = SearchEngine()
 
         searchResults = searchEngine.searchDataInMessages(
@@ -146,20 +137,17 @@ class ClusterByApplicativeData(object):
             messagesPerAppData[idMessages[message.id]].add(label)
 
         # Build clusters
-        clusters = dict()
+        clusters = {}
         for message, labelsInMessage in list(messagesPerAppData.items()):
             strAppDatas = ';'.join(sorted(labelsInMessage))
-            if len(strAppDatas) == 0:
+            if not strAppDatas:
                 strAppDatas = None
             if strAppDatas in list(clusters.keys()):
                 clusters[strAppDatas].append(message)
             else:
                 clusters[strAppDatas] = [message]
 
-        # Build Symbols
-        symbols = [
+        return [
             Symbol(name=strAppDatas, messages=msgs)
             for strAppDatas, msgs in list(clusters.items())
         ]
-
-        return symbols

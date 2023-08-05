@@ -413,17 +413,18 @@ class Preset(object):
     # Initialize mapping of types with their mutators
     @staticmethod
     def _initializeTypeMappings():
-        Preset.mappingTypesMutators = {}
-        Preset.mappingTypesMutators[Integer] = (IntegerMutator, {})
-        Preset.mappingTypesMutators[String] = (StringMutator, {})
-        Preset.mappingTypesMutators[HexaString] = (HexaStringMutator, {})
-        Preset.mappingTypesMutators[Raw] = (RawMutator, {})
-        Preset.mappingTypesMutators[BitArray] = (BitArrayMutator, {})
-        Preset.mappingTypesMutators[IPv4] = (IPv4Mutator, {})
-        Preset.mappingTypesMutators[Timestamp] = (TimestampMutator, {})
-        Preset.mappingTypesMutators[Repeat] = (RepeatMutator, {})
-        Preset.mappingTypesMutators[Alt] = (AltMutator, {})
-        Preset.mappingTypesMutators[Agg] = (AggMutator, {})
+        Preset.mappingTypesMutators = {
+            Integer: (IntegerMutator, {}),
+            String: (StringMutator, {}),
+            HexaString: (HexaStringMutator, {}),
+            Raw: (RawMutator, {}),
+            BitArray: (BitArrayMutator, {}),
+            IPv4: (IPv4Mutator, {}),
+            Timestamp: (TimestampMutator, {}),
+            Repeat: (RepeatMutator, {}),
+            Alt: (AltMutator, {}),
+            Agg: (AggMutator, {}),
+        }
 
     @public_api
     def __init__(self, symbol, name="preset"):
@@ -1258,14 +1259,19 @@ class Preset(object):
             seed = Mutator.SEED_DEFAULT
 
         # Update kwargs with the first 4 parameters. This kwargs will be passed to Mutator constructors
-        kwargs.update({'mode': mode, 'generator': generator, 'seed': seed, 'counterMax': counterMax})
+        kwargs |= {
+            'mode': mode,
+            'generator': generator,
+            'seed': seed,
+            'counterMax': counterMax,
+        }
 
         # Case where target key is an AbstractField or AbstractVariable or a string
         if isinstance(key, (AbstractField, AbstractVariable, str)):
 
             if value is not None:
                 # Add value to kwargs, so that it is accessible later
-                kwargs.update({'value': value})
+                kwargs['value'] = value
 
             # Resolve the key if it is a string, to find the corresponding object (field or variable)
             if isinstance(key, str):
@@ -1280,7 +1286,6 @@ class Preset(object):
             # Normalize mapping
             self.normalize_mappingFieldsMutators()
 
-        # Case where target key is an AbstractType
         elif isinstance(key, type):
 
             # Update default Mutator parameters for the associated type
@@ -1291,10 +1296,10 @@ class Preset(object):
                     self.mappingTypesMutators[t] = mutator, mutator_default_parameters
                     break
             else:
-                raise TypeError("Unsupported type for key: '{}'".format(type(key)))
+                raise TypeError(f"Unsupported type for key: '{type(key)}'")
 
         else:
-            raise TypeError("Unsupported type for key: '{}'".format(type(key)))
+            raise TypeError(f"Unsupported type for key: '{type(key)}'")
 
     @public_api
     def clear(self):
@@ -1496,26 +1501,21 @@ class Preset(object):
         if isinstance(key, AbstractVariable):
             keys_to_remove.append(key)
 
-        # Handle case where k is a Field containing sub-Fields -> we retrieve all its field variables
         elif isinstance(key, Field) and len(key.fields) > 0:
             subfields = key.fields
             keys_to_remove.append(key)
-            for f in subfields:
-                keys_to_remove.append(f.domain)
-
-        # Handle case where k is a Field -> retrieve the associated variable
+            keys_to_remove.extend(f.domain for f in subfields)
         elif isinstance(key, Field):
             keys_to_remove.append(key.domain)
 
-        # Handle case where k is a Symbol -> we retrieve all its field variables
         elif isinstance(key, Symbol):
             subfields = key.getLeafFields(includePseudoFields=True)
             keys_to_remove.append(key)
-            for f in subfields:
-                keys_to_remove.append(f.domain)
+            keys_to_remove.extend(f.domain for f in subfields)
         else:
-            raise Exception("Key must be a Symbol, a Field or a Variable"
-                            ", but not a '{}'".format(type(key)))
+            raise Exception(
+                f"Key must be a Symbol, a Field or a Variable, but not a '{type(key)}'"
+            )
 
         # Update keys
         for old_key in keys_to_remove:
@@ -1529,14 +1529,14 @@ class Preset(object):
                 return self.mappingTypesMutators[key]
             else:
                 return None
-        elif isinstance(key, (AbstractField, AbstractVariable)) or isinstance(key, str):
+        elif isinstance(key, (AbstractField, AbstractVariable, str)):
             # We return the associated mutator instance
             if key in self.mappingFieldsMutators:
                 return self.mappingFieldsMutators[key]
             else:
                 return None
         else:
-            raise TypeError("Unsupported type for key: '{}'".format(type(key)))
+            raise TypeError(f"Unsupported type for key: '{type(key)}'")
 
     @staticmethod
     def _retrieveDefaultMutator(domain, mapping, **kwargs):
@@ -1561,15 +1561,12 @@ class Preset(object):
                     mutator, mutator_default_parameters = mapping[t]
                     break
         else:
-            raise Exception("Cannot find a default Mutator for the domain '{}'.".format(domain))
+            raise Exception(f"Cannot find a default Mutator for the domain '{domain}'.")
 
         # Update default Mutator parameters with explicitly provided parameters
         mutator_default_parameters.update(kwargs)
 
-        # Instanciate the mutator
-        mutatorInstance = mutator(domain, **mutator_default_parameters)
-
-        return mutatorInstance
+        return mutator(domain, **mutator_default_parameters)
 
     def normalize_mappingFieldsMutators(self):
         """Normalize the fuzzing configuration.
@@ -1588,7 +1585,7 @@ class Preset(object):
         for k, v in self.mappingFieldsMutators.items():
             keys[k] = v
             if isinstance(k, AbstractVariableNode):
-                keys.update(self._propagateMutation(k, v))
+                keys |= self._propagateMutation(k, v)
         self.mappingFieldsMutators.update(keys)
 
         # Third loop to normalize fuzzing values, after handling complex domains (that may have added news keys:values)
@@ -1616,7 +1613,6 @@ class Preset(object):
             if isinstance(k, AbstractVariable):
                 pass
 
-            # Handle case where k is a Field containing sub-Fields -> we retrieve all its field variables
             elif isinstance(k, Field) and len(k.fields) > 0:
 
                 if 'value' in v:
@@ -1634,12 +1630,10 @@ class Preset(object):
                     elif f.domain not in self.mappingFieldsMutators.keys():
                         new_keys[f.domain] = v
 
-            # Handle case where k is a Field -> retrieve the associated variable
             elif isinstance(k, Field):
                 keys_to_remove.append(k)
                 new_keys[k.domain] = v
 
-            # Handle case where k is a Symbol -> we retrieve all its field variables
             elif isinstance(k, Symbol):
                 subfields = k.getLeafFields(includePseudoFields=True)
                 keys_to_remove.append(k)
@@ -1654,8 +1648,9 @@ class Preset(object):
                         new_keys[f.domain] = v
 
             else:
-                raise Exception("Fuzzing keys must contain Symbol, Fields or Variables"
-                                ", but not a '{}'".format(type(k)))
+                raise Exception(
+                    f"Fuzzing keys must contain Symbol, Fields or Variables, but not a '{type(k)}'"
+                )
 
         # Update keys
         for old_key in keys_to_remove:
@@ -1684,7 +1679,9 @@ class Preset(object):
                     break
 
         if var_found is None:
-            raise Exception("The key string '{}' has not been recognized in current symbol to preset".format(name))
+            raise Exception(
+                f"The key string '{name}' has not been recognized in current symbol to preset"
+            )
         return var_found
 
     def _normalizeValues(self):
@@ -1697,13 +1694,11 @@ class Preset(object):
 
             # If k is a str, the value will be normalized after the key is transformed into a field or variable object
             if isinstance(k, str):
-                raise Exception("The key string '{}' has not been recognized in current symbol to preset".format(k))
+                raise Exception(
+                    f"The key string '{k}' has not been recognized in current symbol to preset"
+                )
 
-            # If the value is already a Mutator instance -> we do nothing
-            elif isinstance(v, Mutator):
-                pass
-            # Else, we instanciate the default Mutator according to the type of the object
-            else:
+            elif not isinstance(v, Mutator):
 
                 # Handle fixed fuzzing mode (aka fixed preset)
                 kwargs = v
@@ -1723,12 +1718,9 @@ class Preset(object):
                         generator = repeat(fixed_value)
                     elif isinstance(fixed_value, (str, bytes, int, bitarray)):
 
-                        if isinstance(fixed_value, bytes):
-                            pass
-                        elif isinstance(fixed_value, bitarray):
-                            pass
-                            #fixed_value = fixed_value.tobytes()
-                        else:
+                        if not isinstance(fixed_value, bytes) and not isinstance(
+                            fixed_value, bitarray
+                        ):
                             # Retrieve the variable data type
                             datatype = k.dataType
                             fixed_value = datatype.__class__(fixed_value)
@@ -1779,7 +1771,7 @@ class Preset(object):
 
                 # Propagate mutation to the child if it is a complex domain
                 if isinstance(variable.children[0], AbstractVariableNode):
-                    tmp_new_keys.update(self._propagateMutation(variable.children[0], mut_inst))
+                    tmp_new_keys |= self._propagateMutation(variable.children[0], mut_inst)
 
         elif isinstance(variable, Alt) and isinstance(mutator, AltMutator) and mutator.mutateChild:
 
@@ -1849,7 +1841,9 @@ class Preset(object):
     def symbol(self, symbol):
         from netzob.Model.Vocabulary.AbstractField import AbstractField
         if not isinstance(symbol, AbstractField):
-            raise TypeError("It is expected a symbol or field for the Preset configuration, not '{}' of type '{}'".format(symbol, type(symbol)))
+            raise TypeError(
+                f"It is expected a symbol or field for the Preset configuration, not '{symbol}' of type '{type(symbol)}'"
+            )
         self.__symbol = symbol
 
 

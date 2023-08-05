@@ -92,8 +92,9 @@ class UnknownSymbol(Symbol):
 
         super(UnknownSymbol, self).__init__(
             fields=None,
-            name="Unknown message {}".format(name_suffix),
-            messages=[self.message])
+            name=f"Unknown message {name_suffix}",
+            messages=[self.message],
+        )
 
     def __repr__(self):
         return self.name

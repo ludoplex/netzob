@@ -47,7 +47,7 @@ class test_Checksums(unittest.TestCase):
                 msg = line[6:-1]
             elif 'CS =' in line:
                 if len(msg) != given_len:
-                    msg = msg[0 : given_len]
+                    msg = msg[:given_len]
                 self.check_res(msg, line[5:-1], checksum_class)
                 msg = ""
                 given_len = 0

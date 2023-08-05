@@ -67,9 +67,9 @@ def _executeSearch(arg, **kwargs):
     dataLabels = arg[3]
 
     se = SearchEngine()
-    c = se.searchDataInMessage(
-        data, message, addTags=addTags, dataLabels=dataLabels)
-    return c
+    return se.searchDataInMessage(
+        data, message, addTags=addTags, dataLabels=dataLabels
+    )
 
 
 @NetzobLogger
@@ -300,9 +300,7 @@ class SearchEngine(object):
             normedData = AbstractType.normalize(d)
 
             # build search tasks
-            props = dict()
-            props['message'] = message
-            props['data'] = d
+            props = {'message': message, 'data': d}
             if dataLabels is not None and d in list(dataLabels.keys()):
                 props['label'] = dataLabels[d]
 
@@ -314,15 +312,7 @@ class SearchEngine(object):
         # Generate search cases
         searchCases = itertools.product([target], searchTasks)
 
-        searchResults = self.__search(searchCases)
-
-        # If requested, we tag the results in the message using visualization functions
-        # if addTags:
-        #     for searchResult in searchResults:
-        #         for (startPos, endPos) in searchResult.ranges:
-        #             self._logger.info("function from {} to {}".format(startPos, endPos))
-        #             message.visualizationFunctions.append(HighlightFunction(startPos, endPos))
-        return searchResults
+        return self.__search(searchCases)
 
     def __search(self, searchCases):
         """Execute the different search cases and build
@@ -348,11 +338,12 @@ class SearchEngine(object):
 
             ranges = []
             for startIndex in target.search(searchTask.data):
-                self._logger.debug("Search found {}: {}>{}".format(
-                    searchTask.data, startIndex, len(searchTask.data)))
+                self._logger.debug(
+                    f"Search found {searchTask.data}: {startIndex}>{len(searchTask.data)}"
+                )
                 ranges.append((startIndex, startIndex + len(searchTask.data)))
 
-            if len(ranges) > 0:
+            if ranges:
                 results.append(SearchResult(target, searchTask, ranges))
 
         return results

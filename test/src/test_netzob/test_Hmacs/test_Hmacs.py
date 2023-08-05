@@ -51,7 +51,7 @@ class test_Hmacs(unittest.TestCase):
         key = ""
         mac_len = 0
         for line in fd:
-            if line.find('[L='+str(mac_len_start)+']') != -1:      # mean start of the algorithm section
+            if line.find(f'[L={str(mac_len_start)}]') != -1:      # mean start of the algorithm section
                 break
         for line in fd:
             if line.find('[L=') != -1:      # mean end of the algorithm section

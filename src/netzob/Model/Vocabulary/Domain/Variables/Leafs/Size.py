@@ -289,20 +289,18 @@ class Size(AbstractRelationVariableLeaf):
             elif parsingPath.hasData(variable) or variable is self:
                 remainingVariables.append(variable)
 
-            # variable is a leaf
             elif isinstance(variable, AbstractVariableLeaf):
                 try:
                     size += variable.getFixedBitSize()
                 except ValueError:
                     remainingVariables.append(variable)
 
-            # variable is a node
             elif isinstance(variable, AbstractVariableNode):
                 if isinstance(variable, Agg):
                     size += self.__computeExpectedValue_stage1(
                         variable.children, parsingPath, remainingVariables)
                 else:
-                    error_message = "The following variable has no value: '{}' for field '{}'".format(variable, variable.field)
+                    error_message = f"The following variable has no value: '{variable}' for field '{variable.field}'"
                     self._logger.debug(error_message)
                     raise RelationDependencyException(error_message, variable)
             else:
@@ -321,13 +319,12 @@ class Size(AbstractRelationVariableLeaf):
             # Retrieve variable value
             if variable is self:
                 value = self.dataType.generate()
+            elif parsingPath.hasData(variable):
+                value = parsingPath.getData(variable)
             else:
-                if parsingPath.hasData(variable):
-                    value = parsingPath.getData(variable)
-                else:
-                    error_message = "The following variable has no value: '{}' for field '{}'".format(variable, variable.field)
-                    self._logger.debug(error_message)
-                    raise RelationDependencyException(error_message, variable)
+                error_message = f"The following variable has no value: '{variable}' for field '{variable.field}'"
+                self._logger.debug(error_message)
+                raise RelationDependencyException(error_message, variable)
 
             if value is None:
                 break
@@ -339,7 +336,9 @@ class Size(AbstractRelationVariableLeaf):
 
     @typeCheck(GenericPath)
     def computeExpectedValue(self, parsingPath, preset=None):
-        self._logger.debug("Compute expected value for Size variable '{}' from field '{}'".format(self, self.field))
+        self._logger.debug(
+            f"Compute expected value for Size variable '{self}' from field '{self.field}'"
+        )
 
         # first checks the pointed fields all have a value
         remainingVariables = []
@@ -351,12 +350,15 @@ class Size(AbstractRelationVariableLeaf):
         # Check if we can encode the size in the Size field structure
         max_size = (1 << self.dataType.unitSize.value)
         if size > max_size:
-            error_message = "The computed size (which is '{}') cannot be encoded in the current Size field".format(size)
-            if self.field is not None and len(self.field.name) > 0:
-                error_message = error_message + " '{}' (which can encode at most a value of '{}').".format(self.field.name, max_size)
-            else:
-                error_message = error_message + " (which can encode at most a value of '{}').".format(max_size)
-            error_message = error_message + " You should consider using a bigger dataType."
+            error_message = (
+                f"The computed size (which is '{size}') cannot be encoded in the current Size field"
+                + (
+                    f" '{self.field.name}' (which can encode at most a value of '{max_size}')."
+                    if self.field is not None and len(self.field.name) > 0
+                    else f" (which can encode at most a value of '{max_size}')."
+                )
+            )
+            error_message += " You should consider using a bigger dataType."
             self._logger.debug(error_message)
             raise ValueError(error_message)
 
@@ -376,7 +378,7 @@ class Size(AbstractRelationVariableLeaf):
         while len(b) > self.dataType.size[1]:
             b.remove(0)
 
-        self._logger.debug("Computed value for {}: '{}'".format(self, b.tobytes()))
+        self._logger.debug(f"Computed value for {self}: '{b.tobytes()}'")
         return b
 
     def __str__(self):

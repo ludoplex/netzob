@@ -171,21 +171,23 @@ class Raw(AbstractType):
                 raise ValueError("Raw value cannot have a length equal to 0")
 
         if value is not None and not isinstance(value, bitarray):
-            if isinstance(value, bytes):
-                tmp_value = value
-                value = bitarray(endian='big')
-                value.frombytes(tmp_value)
-            else:
-                raise ValueError("Unsupported input format for value: '{}', type is: '{}', expected type is 'bitarray' or 'bytes'".format(value, type(value)))
+            if not isinstance(value, bytes):
+                raise ValueError(
+                    f"Unsupported input format for value: '{value}', type is: '{type(value)}', expected type is 'bitarray' or 'bytes'"
+                )
 
+            tmp_value = value
+            value = bitarray(endian='big')
+            value.frombytes(tmp_value)
         if default is not None and not isinstance(default, bitarray):
-            if isinstance(default, bytes):
-                tmp_default = default
-                default = bitarray(endian='big')
-                default.frombytes(tmp_default)
-            else:
-                raise ValueError("Unsupported input format for default value: '{}', type is: '{}', expected type is 'bitarray' or 'bytes'".format(default, type(default)))
+            if not isinstance(default, bytes):
+                raise ValueError(
+                    f"Unsupported input format for default value: '{default}', type is: '{type(default)}', expected type is 'bitarray' or 'bytes'"
+                )
 
+            tmp_default = default
+            default = bitarray(endian='big')
+            default.frombytes(tmp_default)
         # Handle raw data size if value is None
         if value is None:
             nbBits = self._convertNbBytesinNbBits(nbBytes)
@@ -205,13 +207,11 @@ class Raw(AbstractType):
 
     def __str__(self):
         if self.value is not None:
-            return "{}({})".format(self.typeName,
-                                   repr(self.value.tobytes()))
+            return f"{self.typeName}({repr(self.value.tobytes())})"
+        if self.size[0] == self.size[1]:
+            return f"{self.typeName}(nbBytes={int(self.size[0] / 8)})"
         else:
-            if self.size[0] == self.size[1]:
-                return "{}(nbBytes={})".format(self.typeName, int(self.size[0] / 8))
-            else:
-                return "{}(nbBytes=({},{}))".format(self.typeName, int(self.size[0] / 8), int(self.size[1] / 8))
+            return f"{self.typeName}(nbBytes=({int(self.size[0] / 8)},{int(self.size[1] / 8)}))"
 
     def __repr__(self):
         r"""
@@ -231,10 +231,7 @@ class Raw(AbstractType):
         ------------------
 
         """
-        if self.value is not None:
-            return str(self.value.tobytes())
-        else:
-            return str(self.value)
+        return str(self.value.tobytes()) if self.value is not None else str(self.value)
 
     def _convertNbBytesinNbBits(self, nbBytes):
         nbMinBit = 0
@@ -280,16 +277,15 @@ class Raw(AbstractType):
         """
         if self.value is not None:
             return 1
-        else:
-            range_min = int(self.size[0] / 8)
-            range_max = int(self.size[1] / 8)
-            permitted_values = 256
-            count = 0
-            for i in range(range_min, range_max + 1):
-                count += permitted_values ** i
-                if count > AbstractType.MAXIMUM_POSSIBLE_VALUES:
-                    return AbstractType.MAXIMUM_POSSIBLE_VALUES
-            return count
+        range_min = int(self.size[0] / 8)
+        range_max = int(self.size[1] / 8)
+        permitted_values = 256
+        count = 0
+        for i in range(range_min, range_max + 1):
+            count += permitted_values ** i
+            if count > AbstractType.MAXIMUM_POSSIBLE_VALUES:
+                return AbstractType.MAXIMUM_POSSIBLE_VALUES
+        return count
 
     def generate(self, generationStrategy=None):
         """Generates a random Raw that respects the requested size or the
@@ -332,9 +328,14 @@ class Raw(AbstractType):
 
         generatedValue = None
         if self.alphabet is None:
-            generatedValue = b''.join(random.randint(0, 255).to_bytes(length=1, byteorder='big') for i in range(int(generatedSize / 8)))
+            generatedValue = b''.join(
+                random.randint(0, 255).to_bytes(length=1, byteorder='big')
+                for _ in range(generatedSize // 8)
+            )
         else:
-            generatedValue = b"".join([random.choice(self.alphabet) for _ in range(int(generatedSize / 8))])
+            generatedValue = b"".join(
+                [random.choice(self.alphabet) for _ in range(generatedSize // 8)]
+            )
 
         result = bitarray(endian='big')
         result.frombytes(generatedValue)
@@ -404,20 +405,17 @@ class Raw(AbstractType):
 
         # Check if data is in bytes and normalize it in bitarray
         if not isinstance(data, bitarray):
-            if isinstance(data, bytes):
-                tmp_data = data
-                data = bitarray(endian='big')
-                data.frombytes(tmp_data)
-            else:
-                raise ValueError("Unsupported input format for data: '{}', type: '{}'".format(data, type(data)))
+            if not isinstance(data, bytes):
+                raise ValueError(
+                    f"Unsupported input format for data: '{data}', type: '{type(data)}'"
+                )
 
+            tmp_data = data
+            data = bitarray(endian='big')
+            data.frombytes(tmp_data)
         # Compare with self.value if it is defined
         if self.value is not None:
-            if self.value == data:
-                return True
-            else:
-                return False
-
+            return self.value == data
         # Else, compare with expected size
         if len(data) % 8 != 0:
             return False

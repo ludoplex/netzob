@@ -78,7 +78,7 @@ class manpage_command(Command):
         self.configureCommandLine()
         self._parser.formatter = ManPageFormatter()
         self._parser.formatter.set_parser(self._parser)
-        self.announce('Writing man page %s' % self.output)
+        self.announce(f'Writing man page {self.output}')
         self._today = datetime.date.today()
 
     def _markup(self, txt):
@@ -86,38 +86,34 @@ class manpage_command(Command):
 
     def _write_header(self):
         appname = self.distribution.get_name()
-        ret = []
-        ret.append('.TH %s 1 %s\n' % (self._markup(appname),
-                                      self._today.strftime('%Y\\-%m\\-%d')))
-        description = self.distribution.get_description()
-        if description:
-            name = self._markup('%s - %s' % (self._markup(appname),
-                                             description.splitlines()[0]))
+        ret = [
+            '.TH %s 1 %s\n'
+            % (self._markup(appname), self._today.strftime('%Y\\-%m\\-%d'))
+        ]
+        if description := self.distribution.get_description():
+            name = self._markup(f'{self._markup(appname)} - {description.splitlines()[0]}')
         else:
             name = self._markup(appname)
         ret.append('.SH NAME\n%s\n' % name)
-        synopsis = self._parser.get_usage()
-        if synopsis:
-            synopsis = synopsis.replace('%s ' % appname, '')
+        if synopsis := self._parser.get_usage():
+            synopsis = synopsis.replace(f'{appname} ', '')
             ret.append('.SH SYNOPSIS\n.B %s\n%s\n' % (self._markup(appname),
                                                       synopsis))
-        long_desc = self.distribution.get_long_description()
-        if long_desc:
+        if long_desc := self.distribution.get_long_description():
             ret.append('.SH DESCRIPTION\n%s\n' % self._markup(long_desc))
         return ''.join(ret)
 
     def _write_options(self):
-        ret = ['.SH OPTIONS\n']
-        ret.append(self._parser.format_option_help())
+        ret = ['.SH OPTIONS\n', self._parser.format_option_help()]
         return ''.join(ret)
 
     def _write_footer(self):
-        ret = []
         appname = self.distribution.get_name()
-        author = '%s <%s>' % (self.distribution.get_author(),
-                              self.distribution.get_author_email())
-        ret.append(('.SH AUTHORS\n.B %s\nwas written by %s.\n'
-                    % (self._markup(appname), self._markup(author))))
+        author = f'{self.distribution.get_author()} <{self.distribution.get_author_email()}>'
+        ret = [
+            '.SH AUTHORS\n.B %s\nwas written by %s.\n'
+            % (self._markup(appname), self._markup(author))
+        ]
         homepage = self.distribution.get_url()
         ret.append(('.SH DISTRIBUTION\nThe latest version of %s may '
                     'be downloaded from\n'
@@ -126,13 +122,11 @@ class manpage_command(Command):
         return ''.join(ret)
 
     def run(self):
-        manpage = []
-        manpage.append(self._write_header())
+        manpage = [self._write_header()]
         manpage.append(self._write_options())
         manpage.append(self._write_footer())
-        stream = open(self.output, 'w')
-        stream.write(''.join(manpage))
-        stream.close()
+        with open(self.output, 'w') as stream:
+            stream.write(''.join(manpage))
 
 
 class ManPageFormatter(optparse.HelpFormatter):
@@ -152,14 +146,11 @@ class ManPageFormatter(optparse.HelpFormatter):
         return self._markup(usage)
 
     def format_heading(self, heading):
-        if self.level == 0:
-            return ''
-        return '.TP\n%s\n' % self._markup(heading.upper())
+        return '' if self.level == 0 else '.TP\n%s\n' % self._markup(heading.upper())
 
     def format_option(self, option):
-        result = []
         opts = self.option_strings[option]
-        result.append('.TP\n.B %s\n' % self._markup(opts))
+        result = ['.TP\n.B %s\n' % self._markup(opts)]
         if option.help:
             help_text = '%s\n' % self._markup(self.expand_default(option))
             result.append(help_text)

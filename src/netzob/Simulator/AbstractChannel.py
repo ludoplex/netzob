@@ -265,12 +265,11 @@ class AbstractChannel(ChannelInterface, Thread, metaclass=abc.ABCMeta):
 
         """
 
-        if self.threaded_mode:
-            self.queue_output.put(data)
-            self.queue_output.join()
-            return len(data)
-        else:
+        if not self.threaded_mode:
             return self.write_map(repeat(data), duration=duration)
+        self.queue_output.put(data)
+        self.queue_output.join()
+        return len(data)
 
     @public_api
     def write_map(self, data_iterator, duration=None):
@@ -290,8 +289,7 @@ class AbstractChannel(ChannelInterface, Thread, metaclass=abc.ABCMeta):
         """
         if ((self.__writeCounterMax > 0) and
            (self.__writeCounter > self.__writeCounterMax)):
-            raise Exception("Max write counter reached ({})"
-                            .format(self.__writeCounterMax))
+            raise Exception(f"Max write counter reached ({self.__writeCounterMax})")
 
         self.__writeCounter += 1
         len_data = 0
@@ -348,9 +346,9 @@ class AbstractChannel(ChannelInterface, Thread, metaclass=abc.ABCMeta):
         :type predicate: ~typing.Callable[[bytes], bool], required
         """
         if not callable(predicate):
-            raise ValueError("The predicate attribute must be a callable "
-                             "expecting a single bytes attribute, not '{}'"
-                             .format(type(predicate).__name__))
+            raise ValueError(
+                f"The predicate attribute must be a callable expecting a single bytes attribute, not '{type(predicate).__name__}'"
+            )
         return predicate(self.read(), *args, **kwargs)
 
     @public_api
@@ -450,21 +448,21 @@ class AbstractChannel(ChannelInterface, Thread, metaclass=abc.ABCMeta):
             try:
                 self.writePacket(data)
             except PermissionError as e:
-                self._logger.warning("Error on socket writing: '{}'".format(e))
+                self._logger.warning(f"Error on socket writing: '{e}'")
             self.queue_output.task_done()
             self._logger.debug("Data sent")
 
     def check_incoming_data(self):
         try:
             data = self.read()
-            self._logger.debug("Received : {}".format(repr(data)))
+            self._logger.debug(f"Received : {repr(data)}")
         except socket.timeout:
             data = None
         except Exception as e:
             if not self.isActive():
                 return
             else:
-                self._logger.debug("Exception on read(): '{}'".format(e))
+                self._logger.debug(f"Exception on read(): '{e}'")
             raise
         else:
             return data
@@ -474,10 +472,14 @@ class AbstractChannel(ChannelInterface, Thread, metaclass=abc.ABCMeta):
 
         for abstraction_layer in self.registered_abstraction_layers:
             if abstraction_layer.is_data_interesting(data):
-                self._logger.debug("Adding received message to input queue of abstraction layer '{}'".format(id(abstraction_layer)))
+                self._logger.debug(
+                    f"Adding received message to input queue of abstraction layer '{id(abstraction_layer)}'"
+                )
                 abstraction_layer.queue_input.put(data)
             else:
-                self._logger.debug("Abstraction layer {} is not interesed by the received data".format(id(abstraction_layer)))
+                self._logger.debug(
+                    f"Abstraction layer {id(abstraction_layer)} is not interesed by the received data"
+                )
 
     @public_api
     def stop(self):
@@ -588,21 +590,19 @@ class NetUtils(object):
 
         """
         dstMacAddr = get_mac_address(ip=remoteIP)
-        if dstMacAddr is not None:
-            dstMacAddr = dstMacAddr.replace(':', '')
-            dstMacAddr = binascii.unhexlify(dstMacAddr)
-        else:
+        if dstMacAddr is None:
             # Force ARP resolution
             p = subprocess.Popen(["/bin/ping", "-c1", "-W1", "-q", remoteIP])
             p.wait()
             time.sleep(0.1)
 
             dstMacAddr = get_mac_address(ip=remoteIP)
-            if dstMacAddr is not None:
-                dstMacAddr = dstMacAddr.replace(':', '')
-                dstMacAddr = binascii.unhexlify(dstMacAddr)
-            else:
-                raise Exception("Cannot resolve IP address to a MAC address for IP: '{}'".format(remoteIP))
+        if dstMacAddr is None:
+            raise Exception(
+                f"Cannot resolve IP address to a MAC address for IP: '{remoteIP}'"
+            )
+        dstMacAddr = dstMacAddr.replace(':', '')
+        dstMacAddr = binascii.unhexlify(dstMacAddr)
         return dstMacAddr
 
     @staticmethod
@@ -666,7 +666,9 @@ class NetUtils(object):
                 struct.pack('256s', bytes(ifname[:15], 'utf-8'))
             )[20:24])
         except OSError as e:
-            raise Exception("Cannot retrieve IP address from interface: '{}'".format(ifname)) from None
+            raise Exception(
+                f"Cannot retrieve IP address from interface: '{ifname}'"
+            ) from None
 
     @staticmethod
     def getLocalInterface(localIP):
@@ -687,10 +689,14 @@ class NetUtils(object):
 
         """
 
-        for (networkInterface, ip) in NetUtils.getLocalInterfaces():
-            if localIP == ip:
-                return networkInterface
-        return None
+        return next(
+            (
+                networkInterface
+                for networkInterface, ip in NetUtils.getLocalInterfaces()
+                if localIP == ip
+            ),
+            None,
+        )
 
     @staticmethod
     def getLocalIP(remoteIP):
@@ -734,7 +740,7 @@ class NetUtils(object):
         while True:
             _bytes = max_possible * struct_size
             names = array.array('B')
-            for i in range(0, _bytes):
+            for _ in range(0, _bytes):
                 names.append(0)
             outbytes = struct.unpack('iL', ioctl(
                 s.fileno(),
@@ -773,10 +779,14 @@ class NetUtils(object):
         MacInBytes = localMac.replace(':', '')
         MacInBytes = binascii.unhexlify(MacInBytes)
 
-        for (networkInterface, _) in NetUtils.getLocalInterfaces():
-            if NetUtils.getLocalMacAddress(networkInterface) == MacInBytes:
-                return networkInterface
-        return None
+        return next(
+            (
+                networkInterface
+                for networkInterface, _ in NetUtils.getLocalInterfaces()
+                if NetUtils.getLocalMacAddress(networkInterface) == MacInBytes
+            ),
+            None,
+        )
 
     @staticmethod
     def getMtu(localInterface):
@@ -804,10 +814,9 @@ class NetUtils(object):
             response = ioctl(s,
                              0x8921,  # SIOCGIFMTU
                              struct.pack("16s16x", ifname))
-            mtu = struct.unpack("16xH14x", response)[0]
-            return mtu
+            return struct.unpack("16xH14x", response)[0]
         except OSError as e:
-            raise Exception("Cannot get MTU from interface: '{}'".format(localInterface)) from None
+            raise Exception(f"Cannot get MTU from interface: '{localInterface}'") from None
 
     @staticmethod
     def setMtu(localInterface, mtu):
@@ -855,7 +864,7 @@ class NetUtils(object):
         else:
             sysroot = line.split()[1]
 
-        path = '{}/class/net/{}/operstate'.format(sysroot, localInterface)
+        path = f'{sysroot}/class/net/{localInterface}/operstate'
         with open(path) as fd:
             return 'down' not in fd.read()
 
@@ -875,11 +884,9 @@ class NetUtils(object):
 
         """
         if rate is None:
-            cmd = "tc qdisc del dev {} root".format(
-                localInterface)
+            cmd = f"tc qdisc del dev {localInterface} root"
         else:
-            cmd = "tc qdisc replace dev {} root netem rate {}".format(
-                localInterface, rate * 8)  # in bits per second
+            cmd = f"tc qdisc replace dev {localInterface} root netem rate {rate * 8}"
         cmd = shlex.split(cmd)
         p = subprocess.Popen(
             cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -888,7 +895,9 @@ class NetUtils(object):
             # if rate is None no tc rule was previously defined on the interface,
             # the error "No such file or directory" is returned with returncode=2 : ignore it.
             errMsg = b"ERROR: " + stderrData
-            raise Exception("set_rate(localInterface='{}', rate={}) failed, code = {}: {})".format(localInterface, rate, p.returncode, errMsg))
+            raise Exception(
+                f"set_rate(localInterface='{localInterface}', rate={rate}) failed, code = {p.returncode}: {errMsg})"
+            )
 
     @staticmethod
     def get_rate(localInterface):
@@ -904,8 +913,7 @@ class NetUtils(object):
         :type rate: :class:`str`
 
         """
-        cmd = "tc qdisc show dev {}".format(
-                localInterface)
+        cmd = f"tc qdisc show dev {localInterface}"
         cmd = shlex.split(cmd)
         p = subprocess.Popen(
             cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -914,7 +922,9 @@ class NetUtils(object):
             # if rate is None no tc rule was previously defined on th interface,
             # the error "No such file or directory" is returned with returncode=2 : ignore it.
             errMsg = b"ERROR: " + stderrData
-            raise Exception("get_rate(localInterface='{}', failed, code = {}: {})".format(localInterface, p.returncode, errMsg))
+            raise Exception(
+                f"get_rate(localInterface='{localInterface}', failed, code = {p.returncode}: {errMsg})"
+            )
         if type(stdoutData) == bytes:
             stdoutData = stdoutData.decode("utf-8")
         if "rate" not in stdoutData:

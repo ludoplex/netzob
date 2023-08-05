@@ -401,12 +401,14 @@ class Format(object):
 
         """
 
-        clusters = dict()
+        clusters = {}
         for message in messages:
-            if message.source in clusters.keys():
+            if message.source in clusters:
                 clusters[message.source].messages.append(message)
             else:
-                clusters[message.source] = Symbol(name="Symbol-{}".format(message.source), messages = [message])
+                clusters[message.source] = Symbol(
+                    name=f"Symbol-{message.source}", messages=[message]
+                )
 
         return list(clusters.values())
 
@@ -440,12 +442,14 @@ class Format(object):
 
         """
 
-        clusters = dict()
+        clusters = {}
         for message in messages:
-            if message.destination in clusters.keys():
+            if message.destination in clusters:
                 clusters[message.destination].messages.append(message)
             else:
-                clusters[message.destination] = Symbol(name="Symbol-{}".format(message.destination), messages = [message])
+                clusters[message.destination] = Symbol(
+                    name=f"Symbol-{message.destination}", messages=[message]
+                )
 
         return list(clusters.values())
 
@@ -498,7 +502,7 @@ class Format(object):
         for session in sessions:
             appDatas.extend(session.applicativeData)
 
-        if len(appDatas) == 0:
+        if not appDatas:
             raise ValueError(
                 "There are no applicative data attached to the session from which the specified messages come from."
             )
@@ -553,7 +557,7 @@ class Format(object):
             raise TypeError("'field' should not be None")
         if keyField is None:
             raise TypeError("'keyField' should not be None")
-        if not keyField in field.fields:
+        if keyField not in field.fields:
             raise TypeError("'keyField' is not a child of 'field'")
 
         clusterByKeyField = ClusterByKeyField()

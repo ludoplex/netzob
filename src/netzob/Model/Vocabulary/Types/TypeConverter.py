@@ -148,14 +148,13 @@ class TypeConverter(object):
             else:
                 binData = data
 
-            # Convert from raw to Destination
-            if destinationType is not Raw:
-                outputData = destinationType.encode(
+            return (
+                destinationType.encode(
                     binData,
                     unitSize=dst_unitSize,
                     endianness=dst_endianness,
-                    sign=dst_sign)
-            else:
-                outputData = binData
-
-            return outputData
+                    sign=dst_sign,
+                )
+                if destinationType is not Raw
+                else binData
+            )

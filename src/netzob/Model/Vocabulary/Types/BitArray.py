@@ -239,27 +239,31 @@ class BitArray(AbstractType):
         # Handle input value
         if value is not None and not isinstance(value, bitarray):
 
-            # Check if value is correct, and normalize it in str object, and then in bitarray
-            if isinstance(value, str):
-                try:
-                    value = bitarray(value)
-                except Exception as e:
-                    raise ValueError("Input value for the following BitArray is incorrect: '{}'. Error: '{}'".format(value, e))
-            else:
-                raise ValueError("Unsupported input format for value: '{}', type: '{}'".format(value, type(value)))
+            if not isinstance(value, str):
+                raise ValueError(
+                    f"Unsupported input format for value: '{value}', type: '{type(value)}'"
+                )
 
+            try:
+                value = bitarray(value)
+            except Exception as e:
+                raise ValueError(
+                    f"Input value for the following BitArray is incorrect: '{value}'. Error: '{e}'"
+                )
         # Handle input value
         if default is not None and not isinstance(default, bitarray):
 
-            # Check if default value is correct, and normalize it in str object, and then in bitarray
-            if isinstance(default, str):
-                try:
-                    default = bitarray(default)
-                except Exception as e:
-                    raise ValueError("Input default value for the following BitArray is incorrect: '{}'. Error: '{}'".format(default, e))
-            else:
-                raise ValueError("Unsupported input format for default value: '{}', type: '{}'".format(default, type(default)))
+            if not isinstance(default, str):
+                raise ValueError(
+                    f"Unsupported input format for default value: '{default}', type: '{type(default)}'"
+                )
 
+            try:
+                default = bitarray(default)
+            except Exception as e:
+                raise ValueError(
+                    f"Input default value for the following BitArray is incorrect: '{default}'. Error: '{e}'"
+                )
         # Normalize nbBits
         if value is None:
             nbBits = self._normalizeNbBits(nbBits)
@@ -271,32 +275,30 @@ class BitArray(AbstractType):
 
         # When value is not None, we can access each element of the bitarray with named constants
         if value is not None:
-            self.constants = ["item_{}".format(_) for _ in range(len(value))]
+            self.constants = [f"item_{_}" for _ in range(len(value))]
             self.size = (len(value),) * 2
 
     def __getitem__(self, key):
         if isinstance(key, int):
-            if self.value is not None:
-                return self.value[key]
-            else:
+            if self.value is None:
                 raise ValueError("Cannot access internal bitarray value, as it does not exist.")
-        else:
-            if self.constants is not None:
-                return self.value[self.constants.index(key)]
             else:
-                raise ValueError("Named constant access to bitarray elements is not possible, as bitarray is not of fixed length.")
+                return self.value[key]
+        elif self.constants is not None:
+            return self.value[self.constants.index(key)]
+        else:
+            raise ValueError("Named constant access to bitarray elements is not possible, as bitarray is not of fixed length.")
 
     def __setitem__(self, key, value):
         if isinstance(key, int):
-            if self.value is not None:
-                self.value[key] = value
-            else:
+            if self.value is None:
                 raise ValueError("Cannot access internal bitarray value, as it does not exist.")
-        else:
-            if self.constants is not None:
-                self.value[self.constants.index(key)] = value
             else:
-                raise ValueError("Named constant access to bitarray elements is not possible, as bitarray is not of fixed length.")
+                self.value[key] = value
+        elif self.constants is not None:
+            self.value[self.constants.index(key)] = value
+        else:
+            raise ValueError("Named constant access to bitarray elements is not possible, as bitarray is not of fixed length.")
 
     def _normalizeNbBits(self, nbBits):
         nbMinBit = 0
@@ -343,16 +345,15 @@ class BitArray(AbstractType):
 
         if self.value is not None:
             return 1
-        else:
-            range_min = self.size[0]
-            range_max = self.size[1]
-            permitted_values = 2
-            count = 0
-            for i in range(range_min, range_max + 1):
-                count += permitted_values ** i
-                if count > AbstractType.MAXIMUM_POSSIBLE_VALUES:
-                    return AbstractType.MAXIMUM_POSSIBLE_VALUES
-            return count
+        range_min = self.size[0]
+        range_max = self.size[1]
+        permitted_values = 2
+        count = 0
+        for i in range(range_min, range_max + 1):
+            count += permitted_values ** i
+            if count > AbstractType.MAXIMUM_POSSIBLE_VALUES:
+                return AbstractType.MAXIMUM_POSSIBLE_VALUES
+        return count
 
     def canParse(self,
                  data,
@@ -406,10 +407,7 @@ class BitArray(AbstractType):
 
         if nbMinBits is not None and nbMinBits > nbBitsData:
             return False
-        if nbMaxBits is not None and nbMaxBits < nbBitsData:
-            return False
-
-        return True
+        return nbMaxBits is None or nbMaxBits >= nbBitsData
 
     def generate(self, generationStrategy=None):
         """Generates a random bitarray that respects the constraints.
@@ -426,7 +424,7 @@ class BitArray(AbstractType):
             maxSize = AbstractType.MAXIMUM_GENERATED_DATA_SIZE
 
         generatedSize = random.randint(minSize, maxSize)
-        randomContent = [random.randint(0, 1) for i in range(0, generatedSize)]
+        randomContent = [random.randint(0, 1) for _ in range(0, generatedSize)]
         return bitarray(randomContent)
 
     @staticmethod
@@ -498,7 +496,9 @@ class BitArray(AbstractType):
         elif isinstance(data, str):
             norm_data = bytes(data, "utf-8")
         else:
-            raise TypeError("Invalid type for: '{}'. Expected bytes or str, and got '{}'".format(data, type(data)))
+            raise TypeError(
+                f"Invalid type for: '{data}'. Expected bytes or str, and got '{type(data)}'"
+            )
 
         b = bitarray()
         b.frombytes(norm_data)

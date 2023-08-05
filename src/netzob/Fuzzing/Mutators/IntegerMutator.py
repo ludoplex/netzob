@@ -256,14 +256,10 @@ class IntegerMutator(DomainMutator):
         if self.mode == FuzzingMode.FIXED:
             self.generator = generator
         else:
-            # Configure generator
-
-            # Handle default interval depending on type of generator
-            if generator == DeterministGenerator.name or isinstance(generator, DeterministGenerator):
-                if interval is None:
+            if interval is None:
+                if generator == DeterministGenerator.name or isinstance(generator, DeterministGenerator):
                     interval = FuzzingInterval.DEFAULT_INTERVAL
-            else:
-                if interval is None:
+                else:
                     interval = FuzzingInterval.FULL_INTERVAL
 
             # Initialize generator
@@ -290,19 +286,25 @@ class IntegerMutator(DomainMutator):
         # Check bitsize
         if self.lengthBitSize is not None:
             if not isinstance(self.lengthBitSize, UnitSize):
-                raise ValueError("{} is not a valid bitsize value".format(self.lengthBitSize))
+                raise ValueError(f"{self.lengthBitSize} is not a valid bitsize value")
         if self.lengthBitSize is None:
             self.lengthBitSize = self.domain.dataType.unitSize
 
         # Check minValue and maxValue consistency according to the bitsize value
         if self._minLength >= 0:
             if self._maxLength > (1 << self.lengthBitSize.value) - 1:
-                raise ValueError("The upper bound {} is too large and cannot be encoded on {} bits".format(self._maxLength, self.lengthBitSize))
+                raise ValueError(
+                    f"The upper bound {self._maxLength} is too large and cannot be encoded on {self.lengthBitSize} bits"
+                )
         else:
             if self._maxLength > (1 << (self.lengthBitSize.value - 1)) - 1:
-                raise ValueError("The upper bound {} is too large and cannot be encoded on {} bits".format(self._maxLength, self.lengthBitSize))
+                raise ValueError(
+                    f"The upper bound {self._maxLength} is too large and cannot be encoded on {self.lengthBitSize} bits"
+                )
             if self._minLength < -(1 << (self.lengthBitSize.value - 1)):
-                raise ValueError("The lower bound {} is too small and cannot be encoded on {} bits".format(self._minLength, self.lengthBitSize.value))
+                raise ValueError(
+                    f"The lower bound {self._minLength} is too small and cannot be encoded on {self.lengthBitSize.value} bits"
+                )
 
         # Build the generator
         self.generator = GeneratorFactory.buildGenerator(self.generator,
@@ -322,13 +324,14 @@ class IntegerMutator(DomainMutator):
         FuzzingMode.GENERATE
 
         """
-        m = IntegerMutator(self.domain,
-                           mode=self.mode,
-                           generator=self.generator,
-                           seed=self.seed,
-                           counterMax=self.counterMax,
-                           lengthBitSize=self.lengthBitSize)
-        return m
+        return IntegerMutator(
+            self.domain,
+            mode=self.mode,
+            generator=self.generator,
+            seed=self.seed,
+            counterMax=self.counterMax,
+            lengthBitSize=self.lengthBitSize,
+        )
 
     def count(self):
         r"""
@@ -359,12 +362,11 @@ class IntegerMutator(DomainMutator):
         else:
             count = self._maxLength - self._minLength + 1
 
-        if isinstance(self._effectiveCounterMax, float):
-            count = count * self._effectiveCounterMax
-        else:
-            count = min(count, self._effectiveCounterMax)
-
-        return count
+        return (
+            count * self._effectiveCounterMax
+            if isinstance(self._effectiveCounterMax, float)
+            else min(count, self._effectiveCounterMax)
+        )
 
     def generate(self):
         """This is the mutation method of the integer type.

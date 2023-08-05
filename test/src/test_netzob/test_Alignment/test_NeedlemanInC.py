@@ -46,7 +46,7 @@ except:
     # Else, assume the path is gotten from the 'python setup.py build' command
     arch = os.uname()[-1]
     python_version = sys.version[:3]
-    build_lib_path = "../../../../build/lib.linux-" + arch + "-" + python_version
+    build_lib_path = f"../../../../build/lib.linux-{arch}-{python_version}"
     sys.path.append(build_lib_path)
 
 
@@ -70,11 +70,11 @@ class test_NeedlemanInC(unittest.TestCase):
         nbTest = 10
         alignmentSolution = NeedlemanAndWunsch(8)
 
-        for iTest in range(0, nbTest):
+        for _ in range(0, nbTest):
             messages = []
             # Generate a random number of message to serialize
             nbMessage = random.randint(2, 500)
-            for iMessage in range(0, nbMessage):
+            for _ in range(0, nbMessage):
                 data = TypeConvertor.stringToNetzobRaw(self.generateRandomString(5, 500))
                 message = RawMessage(str(uuid.uuid4()), str(time.time()), data)
                 messages.append(message)
@@ -86,12 +86,14 @@ class test_NeedlemanInC(unittest.TestCase):
         alignmentSolution = NeedlemanAndWunsch(4)
         nbTest = 100
 
-        for iTest in range(0, nbTest):
+        for _ in range(0, nbTest):
             messages = []
             # Generate a random number of message to serialize
             nbMessage = random.randint(2, 50)
-            for iMessage in range(0, nbMessage):
-                data = TypeConvertor.stringToNetzobRaw("bonjour" + self.generateRandomString(5, 30) + ", tout va bien ?")
+            for _ in range(0, nbMessage):
+                data = TypeConvertor.stringToNetzobRaw(
+                    f"bonjour{self.generateRandomString(5, 30)}, tout va bien ?"
+                )
                 message = RawMessage(str(uuid.uuid4()), str(time.time()), data)
                 messages.append(message)
 
@@ -108,7 +110,7 @@ class test_NeedlemanInC(unittest.TestCase):
     def test_alignmentOfEquivalentMessages(self):
         alignmentSolution = NeedlemanAndWunsch(8)
         nbTest = 1000
-        for i_test in range(0, nbTest):
+        for _ in range(0, nbTest):
             common_pattern = self.generateRandomString(30, 40)
             # Generate the content of two messages
             data1 = TypeConvertor.stringToNetzobRaw(common_pattern)
@@ -132,12 +134,16 @@ class test_NeedlemanInC(unittest.TestCase):
     def test_alignmentOfAlmostEquivalentMessages(self):
         alignmentSolution = NeedlemanAndWunsch(8)
         nbTest = 1000
-        for i_test in range(0, nbTest):
+        for _ in range(0, nbTest):
             common_pattern_before = self.generateRandomString(30, 40)
             common_pattern_after = self.generateRandomString(30, 40)
             # Generate the content of two messages
-            data1 = TypeConvertor.stringToNetzobRaw(common_pattern_before + "hercule" + common_pattern_after)
-            data2 = TypeConvertor.stringToNetzobRaw(common_pattern_before + "thomas" + common_pattern_after)
+            data1 = TypeConvertor.stringToNetzobRaw(
+                f"{common_pattern_before}hercule{common_pattern_after}"
+            )
+            data2 = TypeConvertor.stringToNetzobRaw(
+                f"{common_pattern_before}thomas{common_pattern_after}"
+            )
             # Create the messages
             message1 = RawMessage(str(uuid.uuid4()), str(time.time()), data1)
             message2 = RawMessage(str(uuid.uuid4()), str(time.time()), data2)

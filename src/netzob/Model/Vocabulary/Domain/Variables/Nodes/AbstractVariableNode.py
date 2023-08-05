@@ -136,7 +136,7 @@ class AbstractVariableNode(AbstractVariable):
 
         """
 
-        tab = ["     " for x in range(deepness - 1)]
+        tab = ["     " for _ in range(deepness - 1)]
         tab.append("|--   ")
         tab.append("{0}".format(self))
 
@@ -145,8 +145,9 @@ class AbstractVariableNode(AbstractVariable):
             tab.append(" [{0}]".format(preset.get(self).mode))
 
         lines = [''.join(tab)]
-        for f in self.children:
-            lines.append(" " + f.str_structure(preset, deepness + 1))
+        lines.extend(
+            f" {f.str_structure(preset, deepness + 1)}" for f in self.children
+        )
         return '\n'.join(lines)
 
     @property

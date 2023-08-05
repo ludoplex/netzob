@@ -405,10 +405,7 @@ class Repeat(AbstractVariableNode):
 
             # Result
             count = count ** max_repeat
-            if count > AbstractType.MAXIMUM_POSSIBLE_VALUES:
-                return AbstractType.MAXIMUM_POSSIBLE_VALUES
-            else:
-                return count
+            return min(count, AbstractType.MAXIMUM_POSSIBLE_VALUES)
 
     @typeCheck(ParsingPath)
     def parse(self, parsingPath, acceptCallBack=True, triggered=False, **kwargs):
@@ -421,8 +418,9 @@ class Repeat(AbstractVariableNode):
         # retrieve the data to parse
         dataToParse = parsingPath.getData(self)
 
-        self._logger.debug("Parse '{}' as {} with parser path '{}'".format(
-            dataToParse.tobytes(), self, parsingPath))
+        self._logger.debug(
+            f"Parse '{dataToParse.tobytes()}' as {self} with parser path '{parsingPath}'"
+        )
 
         # remove any data assigned to this variable
         parsingPath.removeData(self)
@@ -459,7 +457,7 @@ class Repeat(AbstractVariableNode):
 
         # if no valid result if found, provide a fallback parsing path with
         # an empty result
-        if len(valid_results) == 0:
+        if not valid_results:
             newParsingPath = parsingPath.copy()
             newParsingPath.addResult(self, bitarray(), notify=False)
             valid_results.append(newParsingPath)
@@ -541,7 +539,7 @@ class Repeat(AbstractVariableNode):
 
         break_repeat = RepeatResult.CONTINUE
         for i_repeat in range(self.MAX_REPEAT):
-            self._logger.debug("Repeat iteration: {}".format(i_repeat))
+            self._logger.debug(f"Repeat iteration: {i_repeat}")
             if break_repeat is not RepeatResult.CONTINUE:
                 break
 
@@ -583,13 +581,6 @@ class Repeat(AbstractVariableNode):
                     # apply delimiter if necessary
                     if self.delimiter is not None:
                         raise NotImplementedError("may be buggy")
-                        # check the delimiter is available
-                        toParse = childParsingPath.getData(self.children[0])
-                        if toParse[:len(self.delimiter)] == self.delimiter:
-                            newResult = childParsingPath.getData(self) + self.delimiter
-                            childParsingPath.addResult(self, newResult)
-                            childParsingPath.assignData(dataToParse[len(newResult):], self.children[0])
-                            tmp_results.append(childParsingPath)
                     else:
                         tmp_results.append(childParsingPath)
 
@@ -599,7 +590,7 @@ class Repeat(AbstractVariableNode):
 
             if break_repeat is RepeatResult.STOP_BEFORE:
                 break
-            if len(tmp_results) > 0:
+            if tmp_results:
                 newParsingPaths = tmp_results
             if break_repeat is RepeatResult.STOP_AFTER:
                 break
@@ -618,7 +609,7 @@ class Repeat(AbstractVariableNode):
         if originalSpecializingPath is None:
             raise Exception("Specializing path cannot be None")
 
-        self._logger.debug("Specialize with {}".format(originalSpecializingPath))
+        self._logger.debug(f"Specialize with {originalSpecializingPath}")
 
         newSpecializingPath = originalSpecializingPath
 
@@ -652,20 +643,18 @@ class Repeat(AbstractVariableNode):
             else:
                 i_repeat = generated_value
 
-        # Else, randomly chose the child
-        else:
-            if callable(self.nbRepeat):
-                i_repeat = Repeat.MAX_REPEAT
-            elif isinstance(self.nbRepeat, AbstractVariable):
-                if newSpecializingPath.hasData(self.nbRepeat):
-                    i_repeat_bits = newSpecializingPath.getData(self.nbRepeat)
-                    i_repeat_bytes = i_repeat_bits.tobytes()
-                    i_repeat = int.from_bytes(i_repeat_bytes, byteorder=self.nbRepeat.dataType.endianness.value)
-                else:
-                    i_repeat = 0
-                    newSpecializingPath.registerVariablesCallBack([self.nbRepeat], self, parsingCB=False)
+        elif callable(self.nbRepeat):
+            i_repeat = Repeat.MAX_REPEAT
+        elif isinstance(self.nbRepeat, AbstractVariable):
+            if newSpecializingPath.hasData(self.nbRepeat):
+                i_repeat_bits = newSpecializingPath.getData(self.nbRepeat)
+                i_repeat_bytes = i_repeat_bits.tobytes()
+                i_repeat = int.from_bytes(i_repeat_bytes, byteorder=self.nbRepeat.dataType.endianness.value)
             else:
-                i_repeat = random.randint(self.nbRepeat[0], self.nbRepeat[1])
+                i_repeat = 0
+                newSpecializingPath.registerVariablesCallBack([self.nbRepeat], self, parsingCB=False)
+        else:
+            i_repeat = random.randint(self.nbRepeat[0], self.nbRepeat[1])
 
         if i_repeat == 0:
             newSpecializingPath.addResult(self, bitarray())
@@ -675,7 +664,9 @@ class Repeat(AbstractVariableNode):
 
     def _inner_specialize(self, newSpecializingPath, i_repeat, max_repeat, preset):
 
-        self._logger.debug("Try iteration {}/{} of Repeat specialize with {}".format(i_repeat, max_repeat, newSpecializingPath))
+        self._logger.debug(
+            f"Try iteration {i_repeat}/{max_repeat} of Repeat specialize with {newSpecializingPath}"
+        )
 
         break_repeat = RepeatResult.CONTINUE
 
@@ -697,9 +688,13 @@ class Repeat(AbstractVariableNode):
             if path.hasData(child):
                 newResult += path.getData(child)
             else:
-                self._logger.debug("The REPEAT child ('{}') has no content, therefore we don't produce content for the REPEAT".format(child))
-                self._logger.debug("Callback registered on ancestor node: '{}'".format(self))
-                self._logger.debug("Callback registered due to absence of content in target: '{}'".format(child))
+                self._logger.debug(
+                    f"The REPEAT child ('{child}') has no content, therefore we don't produce content for the REPEAT"
+                )
+                self._logger.debug(f"Callback registered on ancestor node: '{self}'")
+                self._logger.debug(
+                    f"Callback registered due to absence of content in target: '{child}'"
+                )
                 path.registerVariablesCallBack(
                     [child], self, parsingCB=False)
                 yield path
@@ -753,23 +748,21 @@ class Repeat(AbstractVariableNode):
 
             if minNbRepeat < 0:
                 raise ValueError("Minimum nbRepeat must be greater than 0")
-            if maxNbRepeat is not None and maxNbRepeat < minNbRepeat:
-                raise ValueError(
-                    "Maximum must be greater or equals to the minimum")
-            if maxNbRepeat is not None and maxNbRepeat > Repeat.MAX_REPEAT:
-                raise ValueError(
-                    "Maximum nbRepeat supported for a variable is {0}.".format(
-                        Repeat.MAX_REPEAT))
+            if maxNbRepeat is not None:
+                if maxNbRepeat < minNbRepeat:
+                    raise ValueError(
+                        "Maximum must be greater or equals to the minimum")
+                if maxNbRepeat > Repeat.MAX_REPEAT:
+                    raise ValueError(
+                        "Maximum nbRepeat supported for a variable is {0}.".format(
+                            Repeat.MAX_REPEAT))
             self.__nbRepeat = (minNbRepeat, maxNbRepeat)
-        elif callable(nbRepeat):
-            self.__nbRepeat = nbRepeat
-        elif isinstance(nbRepeat, AbstractVariable):
+        elif callable(nbRepeat) or isinstance(nbRepeat, AbstractVariable):
             self.__nbRepeat = nbRepeat
         elif isinstance(nbRepeat, Field):
             self.__nbRepeat = nbRepeat.domain
         else:
-            raise TypeError(
-                "nbRepeat is of wrong type: '{}'.".format(nbRepeat))
+            raise TypeError(f"nbRepeat is of wrong type: '{nbRepeat}'.")
 
     @property
     def delimiter(self):

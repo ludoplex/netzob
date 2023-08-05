@@ -354,10 +354,7 @@ class AbstractField(AbstractMementoCreator, metaclass=abc.ABCMeta):
         :raises: :class:`AlignmentException <netzob.Model.Vocabulary.AbstractField.AlignmentException>` if an error occurs while aligning messages
         """
         cells = self.getCells(encoded=encoded, styled=styled)
-        values = []
-        for line in cells:
-            values.append(b''.join(line))
-        return values
+        return [b''.join(line) for line in cells]
 
     @typeCheck(bool, bool)
     def getMessageCells(self, encoded=False, styled=False):
@@ -625,16 +622,24 @@ class AbstractField(AbstractMementoCreator, metaclass=abc.ABCMeta):
             if is_preset_ok:
                 return data_structure
             else:
-                raise AbstractionException("With the symbol/field '{}', can abstract the data: '{}', but some parsed values do not match the expected preset.".format(self, data)) from None
+                raise AbstractionException(
+                    f"With the symbol/field '{self}', can abstract the data: '{data}', but some parsed values do not match the expected preset."
+                ) from None
         except InvalidParsingPathException as e:
-            raise AbstractionException("With the symbol/field '{}', cannot abstract the data: '{}'. Error: '{}'".format(self, data, e)) from None
+            raise AbstractionException(
+                f"With the symbol/field '{self}', cannot abstract the data: '{data}'. Error: '{e}'"
+            ) from None
             #logging.warn(traceback.format_exc())
 
     def check_preset(self, data_structure, preset):
-        self._logger.debug("Checking symbol consistency regarding its expected preset, for symbol '{}'".format(self))
+        self._logger.debug(
+            f"Checking symbol consistency regarding its expected preset, for symbol '{self}'"
+        )
 
         if preset.symbol != self:
-            raise Exception("The preset configuration is linked to the symbol '{}', but we were given the symbol '{}'".format(preset.symbol, self))
+            raise Exception(
+                f"The preset configuration is linked to the symbol '{preset.symbol}', but we were given the symbol '{self}'"
+            )
 
         result = True
         from netzob.Fuzzing.Mutators.DomainMutator import FuzzingMode
@@ -651,18 +656,22 @@ class AbstractField(AbstractMementoCreator, metaclass=abc.ABCMeta):
                         expected_value = expected_value.tobytes()
                     observed_value = data_structure[field_name]
 
-                    self._logger.debug("Checking field consistence, for field '{}'".format(field_name))
+                    self._logger.debug(f"Checking field consistence, for field '{field_name}'")
                     if expected_value == observed_value:
-                        self._logger.debug("Field '{}' consistency is ok: expected value '{}' == observed value '{}'".format(field_name, expected_value, observed_value))
+                        self._logger.debug(
+                            f"Field '{field_name}' consistency is ok: expected value '{expected_value}' == observed value '{observed_value}'"
+                        )
                     else:
-                        self._logger.debug("Field '{}' consistency is not ok: expected value '{}' != observed value '{}'".format(field_name, expected_value, observed_value))
+                        self._logger.debug(
+                            f"Field '{field_name}' consistency is not ok: expected value '{expected_value}' != observed value '{observed_value}'"
+                        )
                         result = False
                         break
 
         if result:
-            self._logger.debug("Symbol '{}' consistency is ok".format(self))
+            self._logger.debug(f"Symbol '{self}' consistency is ok")
         else:
-            self._logger.debug("Symbol '{}' consistency is not ok".format(self))
+            self._logger.debug(f"Symbol '{self}' consistency is not ok")
         return result
 
     @public_api
@@ -703,10 +712,7 @@ class AbstractField(AbstractMementoCreator, metaclass=abc.ABCMeta):
     def getAncestor(self):
         """Return the ancestor of the current field/symbol.
         """
-        if self.hasParent():
-            return self.parent.getAncestor()
-        else:
-            return self
+        return self.parent.getAncestor() if self.hasParent() else self
 
     @public_api
     def getField(self, field_name):
@@ -738,7 +744,7 @@ class AbstractField(AbstractMementoCreator, metaclass=abc.ABCMeta):
         for field in self.getLeafFields(includePseudoFields=True):
             if field_name == field.name:
                 return field
-        raise KeyError("Field '{}' has not been found in '{}'".format(field_name, self))
+        raise KeyError(f"Field '{field_name}' has not been found in '{self}'")
 
     def getLeafFields(self, depth=None, currentDepth=0, includePseudoFields=False):
         """Extract the leaf fields to consider, regarding the specified depth.
@@ -790,9 +796,7 @@ class AbstractField(AbstractMementoCreator, metaclass=abc.ABCMeta):
 
             # Handle case where the field is pseudo (meaning it does not procude concrete value)
             if fields.isPseudoField:
-                if includePseudoFields:
-                    pass
-                else:
+                if not includePseudoFields:
                     continue
             if fields is not None:
                 leafFields.extend(fields.getLeafFields(depth, currentDepth + 1, includePseudoFields))

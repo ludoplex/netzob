@@ -106,8 +106,8 @@ class State(AbstractState):
         return state
 
     def execute(self, actor):
-        self._logger.debug("  [+] At state '{}'".format(self.name))
-        actor.visit_log.append("  [+] At state '{}'".format(self.name))
+        self._logger.debug(f"  [+] At state '{self.name}'")
+        actor.visit_log.append(f"  [+] At state '{self.name}'")
 
         # If necessary, filter available transitions
         available_transitions = self.__filter_available_transitions(actor, self.transitions)
@@ -125,7 +125,9 @@ class State(AbstractState):
                         break
 
             if should_consider_reception:
-                actor.visit_log.append("  [+] At state '{}', received packet on communication channel. Switching to execution as not initiator.".format(self.name))
+                actor.visit_log.append(
+                    f"  [+] At state '{self.name}', received packet on communication channel. Switching to execution as not initiator."
+                )
                 self._logger.debug("Data received on the communication channel. Switching to execution as not initiator to handle the received message.")
                 return self.executeAsNotInitiator(actor, available_transitions)
 
@@ -136,41 +138,47 @@ class State(AbstractState):
         if next_transition is None:
             return None
 
-        # If transition is in initiator mode
-        if (actor.initiator and not next_transition.inverseInitiator) or (not actor.initiator and next_transition.inverseInitiator):
+        if (not actor.initiator or next_transition.inverseInitiator) and (
+            actor.initiator or not next_transition.inverseInitiator
+        ):
+            # Execute next transition as not initiator
+            return self.executeAsNotInitiator(actor, available_transitions)
 
-            # If necessary, modify the current transition
-            next_transition = self.__modify_current_transition(actor, next_transition, available_transitions)
+        # If necessary, modify the current transition
+        next_transition = self.__modify_current_transition(actor, next_transition, available_transitions)
 
             # Execute next transition as initiator
-            nextState = self.executeAsInitiator(actor, next_transition)
-        else:
-            # Execute next transition as not initiator
-            nextState = self.executeAsNotInitiator(actor, available_transitions)
-
-        return nextState
+        return self.executeAsInitiator(actor, next_transition)
 
     def executeAsInitiator(self, actor, next_transition):
         """This method picks the next available transition and executes it.
 
         """
 
-        self._logger.debug("[actor='{}'] Execute state {} as an initiator".format(str(actor), self.name))
+        self._logger.debug(
+            f"[actor='{str(actor)}'] Execute state {self.name} as an initiator"
+        )
 
         self.active = True
 
-        self._logger.debug("[actor='{}'] Next transition for state '{}': {}.".format(str(actor), self.name, next_transition))
+        self._logger.debug(
+            f"[actor='{str(actor)}'] Next transition for state '{self.name}': {next_transition}."
+        )
 
         # Execute picked transition as an initiator
         try:
             nextState = next_transition.executeAsInitiator(actor)
-            self._logger.debug("[actor='{}'] Transition '{}' leads to state: {}.".format(str(actor), str(next_transition), str(nextState)))
+            self._logger.debug(
+                f"[actor='{str(actor)}'] Transition '{str(next_transition)}' leads to state: {str(nextState)}."
+            )
         except Exception as e:
             self.active = False
             raise
 
         if nextState is None:
-            self._logger.debug("[actor='{}'] The execution of transition '{}' on state '{}' did not return the next state".format(str(actor), str(next_transition), self.name))
+            self._logger.debug(
+                f"[actor='{str(actor)}'] The execution of transition '{str(next_transition)}' on state '{self.name}' did not return the next state"
+            )
 
         self.active = False
 
@@ -185,13 +193,17 @@ class State(AbstractState):
         the end, if no exception occurs, it returns the next state.
 
         """
-        self._logger.debug("[actor='{}'] Execute state {} as a non-initiator".format(str(actor), self.name))
+        self._logger.debug(
+            f"[actor='{str(actor)}'] Execute state {self.name} as a non-initiator"
+        )
 
         self.active = True
 
         # if no transition exists we quit
         if len(self.transitions) == 0:
-            self._logger.debug("[actor='{}'] The current state '{}' has no transitions available".format(str(actor), self.name))
+            self._logger.debug(
+                f"[actor='{str(actor)}'] The current state '{self.name}' has no transitions available"
+            )
             self.active = False
             return None
 
@@ -211,16 +223,19 @@ class State(AbstractState):
 
         if next_transition is not None:
 
-            actor.visit_log.append("  [+]   Going to execute transition '{}'".format(str(next_transition)))
+            actor.visit_log.append(
+                f"  [+]   Going to execute transition '{str(next_transition)}'"
+            )
 
             nextState = next_transition.executeAsNotInitiator(actor)
-            self._logger.debug("[actor='{}'] Transition '{}' leads to state: {}.".format(
-                str(actor), str(next_transition), str(nextState)))
+            self._logger.debug(
+                f"[actor='{str(actor)}'] Transition '{str(next_transition)}' leads to state: {str(nextState)}."
+            )
             if nextState is None:
                 self.active = False
                 raise Exception(
-                    "The execution of transition '{}' on state '{}' did not return the next state.".
-                    format(next_transition.name, self.name))
+                    f"The execution of transition '{next_transition.name}' on state '{self.name}' did not return the next state."
+                )
 
             return nextState
 
@@ -233,7 +248,9 @@ class State(AbstractState):
 
             if received_symbol is None:
                 raise Exception("The abstraction layer returned a None received symbol")
-            self._logger.debug("[actor='{}'] Input symbol: '{}'".format(str(actor), str(received_symbol)))
+            self._logger.debug(
+                f"[actor='{str(actor)}'] Input symbol: '{str(received_symbol)}'"
+            )
 
             # Find the transition which accepts the received symbol as an input symbol, along with the correct input symbol preset
             next_transition = None
@@ -250,33 +267,47 @@ class State(AbstractState):
                         # Check preset
                         if received_symbol.check_preset(received_structure, transition.inputSymbolPreset):
                             self._logger.debug("Receive good symbol with good preset setting")
-                            actor.visit_log.append("  [+]   Received one of the expected symbols ('{}'), with good preset settings ('{}')".format(received_symbol, transition.inputSymbolPreset))
+                            actor.visit_log.append(
+                                f"  [+]   Received one of the expected symbols ('{received_symbol}'), with good preset settings ('{transition.inputSymbolPreset}')"
+                            )
                             next_transition = transition
                             break
                     else:
                         next_transition = transition
                         break
 
-            actor.visit_log.append("  [+]   Input symbol '{}' corresponds to transition '{}'".format(str(received_symbol), str(next_transition)))
+            actor.visit_log.append(
+                f"  [+]   Input symbol '{str(received_symbol)}' corresponds to transition '{str(next_transition)}'"
+            )
 
         except ActorStopException:
             raise
         except socket.timeout:
-            self._logger.debug("[actor='{}'] In state '{}', timeout on abstractionLayer.readSymbol()".format(str(actor), self.name))
+            self._logger.debug(
+                f"[actor='{str(actor)}'] In state '{self.name}', timeout on abstractionLayer.readSymbol()"
+            )
 
             # Check if there is a transition with an EmptySymbol as input symbol
-            self._logger.debug("[actor='{}'] Check if a transition expects an EmptySymbol as input symbol".format(str(actor)))
+            self._logger.debug(
+                f"[actor='{str(actor)}'] Check if a transition expects an EmptySymbol as input symbol"
+            )
             next_transition = None
             for transition in self.transitions:
                 if transition.type == Transition.TYPE and isinstance(transition.inputSymbol, EmptySymbol):
-                    self._logger.debug("[actor='{}'] The transition '{}' expects an EmptySymbol as input symbol ".format(str(actor), str(transition)))
+                    self._logger.debug(
+                        f"[actor='{str(actor)}'] The transition '{str(transition)}' expects an EmptySymbol as input symbol "
+                    )
                     next_transition = transition
 
-                    actor.visit_log.append("  [+]   Receiving no symbol (EmptySymbol) corresponds to transition '{}'".format(str(next_transition)))
+                    actor.visit_log.append(
+                        f"  [+]   Receiving no symbol (EmptySymbol) corresponds to transition '{str(next_transition)}'"
+                    )
 
                     break
             else:
-                self._logger.debug("[actor='{}'] No transition expects an EmptySymbol as input symbol".format(str(actor)))
+                self._logger.debug(
+                    f"[actor='{str(actor)}'] No transition expects an EmptySymbol as input symbol"
+                )
                 self.active = False
 
                 if actor.automata.cbk_read_symbol_timeout is not None:
@@ -286,10 +317,14 @@ class State(AbstractState):
                 return
 
         except OSError as e:
-            self._logger.debug("[actor='{}'] The underlying abstraction channel seems to be closed, so we stop the current actor".format(str(actor)))
+            self._logger.debug(
+                f"[actor='{str(actor)}'] The underlying abstraction channel seems to be closed, so we stop the current actor"
+            )
             return
         except Exception as e:
-            self._logger.debug("[actor='{}'] An exception occured when waiting for a symbol at state '{}': '{}'".format(str(actor), self.name, e))
+            self._logger.debug(
+                f"[actor='{str(actor)}'] An exception occured when waiting for a symbol at state '{self.name}': '{e}'"
+            )
             self.active = False
             raise
 
@@ -298,39 +333,44 @@ class State(AbstractState):
 
         # Execute the retained transition
         if next_transition is None:
-            self._logger.debug("[actor='{}'] The received symbol did not match any of the registered transition".format(str(actor)))
+            self._logger.debug(
+                f"[actor='{str(actor)}'] The received symbol did not match any of the registered transition"
+            )
             #nextState = self
 
             # Handle case where received symbol is unknown
             if isinstance(received_symbol, UnknownSymbol):
 
-                if actor.automata.cbk_read_unknown_symbol is not None:
+                if actor.automata.cbk_read_unknown_symbol is None:
+                    raise Exception("The received message is unknown")
+
+                else:
                     actor.automata.cbk_read_unknown_symbol(self,
                                                            None,
                                                            received_message)
-                else:
-                    raise Exception("The received message is unknown")
-
-            # Handle case where received symbol is known but unexpected
+            elif actor.automata.cbk_read_unexpected_symbol is not None:
+                actor.automata.cbk_read_unexpected_symbol(self,
+                                                          None,
+                                                          received_symbol,
+                                                          received_message,
+                                                          received_structure)
             else:
-
-                if actor.automata.cbk_read_unexpected_symbol is not None:
-                    actor.automata.cbk_read_unexpected_symbol(self,
-                                                              None,
-                                                              received_symbol,
-                                                              received_message,
-                                                              received_structure)
-                else:
-                    raise Exception("The received symbol did not match any of expected symbols, for actor '{}'".format(actor))
+                raise Exception(
+                    f"The received symbol did not match any of expected symbols, for actor '{actor}'"
+                )
 
         else:
 
             for cbk in next_transition.cbk_action:
-                self._logger.debug("[actor='{}'] A callback function is defined at the end of transition '{}'".format(str(actor), next_transition.name))
+                self._logger.debug(
+                    f"[actor='{str(actor)}'] A callback function is defined at the end of transition '{next_transition.name}'"
+                )
                 cbk(received_symbol, received_message, received_structure, Operation.ABSTRACT, self, actor.memory)
 
             nextState = next_transition.executeAsNotInitiator(actor)
-            self._logger.debug("[actor='{}'] Transition '{}' leads to state: {}.".format(str(actor), str(next_transition), str(nextState)))
+            self._logger.debug(
+                f"[actor='{str(actor)}'] Transition '{str(next_transition)}' leads to state: {str(nextState)}."
+            )
 
         self.active = False
 
@@ -346,7 +386,7 @@ class State(AbstractState):
         """
 
         # create a dictionary to host the available transition
-        prioritizedTransitions = dict()
+        prioritizedTransitions = {}
         for transition in available_transitions:
             # Handle transition priority (inputSymbolProbability)
             if transition.inputSymbolProbability in list(prioritizedTransitions.keys()):
@@ -354,7 +394,7 @@ class State(AbstractState):
             else:
                 prioritizedTransitions[transition.inputSymbolProbability] = [transition.copy()]
 
-        if len(prioritizedTransitions) == 0:
+        if not prioritizedTransitions:
             return None
 
         list_probabilities = sorted(prioritizedTransitions.keys())
@@ -368,15 +408,21 @@ class State(AbstractState):
         if isinstance(next_transition, Transition):
             is_transition_initiator = (actor.initiator and not next_transition.inverseInitiator) or (not actor.initiator and next_transition.inverseInitiator)
             if is_transition_initiator:
-                actor.visit_log.append("  [+]   Picking transition '{}' (initiator)".format(next_transition))
+                actor.visit_log.append(
+                    f"  [+]   Picking transition '{next_transition}' (initiator)"
+                )
             else:
                 actor.visit_log.append("  [+]   Waiting for an input symbol to decide the transition (not initiator)")
         elif isinstance(next_transition, OpenChannelTransition):
             initiator_mode = "open channel"
-            actor.visit_log.append("  [+]   Picking transition '{}' ({})".format(next_transition, initiator_mode))
+            actor.visit_log.append(
+                f"  [+]   Picking transition '{next_transition}' ({initiator_mode})"
+            )
         else:
             initiator_mode = "close channel"
-            actor.visit_log.append("  [+]   Picking transition '{}' ({})".format(next_transition, initiator_mode))
+            actor.visit_log.append(
+                f"  [+]   Picking transition '{next_transition}' ({initiator_mode})"
+            )
 
         return next_transition
 
@@ -386,9 +432,13 @@ class State(AbstractState):
 
         """
 
-        self._logger.debug("[actor='{}'] Test if a callback function is defined at state '{}'".format(actor, self.name))
+        self._logger.debug(
+            f"[actor='{actor}'] Test if a callback function is defined at state '{self.name}'"
+        )
         for cbk in self.cbk_modify_transition:
-            self._logger.debug("[actor='{}'] A callback function is defined at state '{}'".format(actor, self.name))
+            self._logger.debug(
+                f"[actor='{actor}'] A callback function is defined at state '{self.name}'"
+            )
             available_transitions = [cloned_transition.copy() for cloned_transition in available_transitions]
             current_transition = cbk(available_transitions,
                                      current_transition,
@@ -401,13 +451,14 @@ class State(AbstractState):
                                      actor.abstractionLayer.last_received_structure,
                                      actor.memory)
             is_transition_initiator = (actor.initiator and not current_transition.inverseInitiator) or (not actor.initiator and current_transition.inverseInitiator)
-            if is_transition_initiator:
-                transition_mode = "initiator"
-            else:
-                transition_mode = "not initiator"
-            actor.visit_log.append("  [+]   Changing transition to '{}' ({}), through callback".format(current_transition, transition_mode))
+            transition_mode = "initiator" if is_transition_initiator else "not initiator"
+            actor.visit_log.append(
+                f"  [+]   Changing transition to '{current_transition}' ({transition_mode}), through callback"
+            )
         else:
-            self._logger.debug("[actor='{}'] No callback function is defined at state '{}'".format(actor, self.name))
+            self._logger.debug(
+                f"[actor='{actor}'] No callback function is defined at state '{self.name}'"
+            )
 
         return current_transition
 
@@ -417,9 +468,13 @@ class State(AbstractState):
 
         """
 
-        self._logger.debug("[actor='{}'] Test if a callback function is defined at state '{}'".format(actor, self.name))
+        self._logger.debug(
+            f"[actor='{actor}'] Test if a callback function is defined at state '{self.name}'"
+        )
         for cbk in self.cbk_filter_transitions:
-            self._logger.debug("[actor='{}'] A callback function is defined at state '{}'".format(actor, self.name))
+            self._logger.debug(
+                f"[actor='{actor}'] A callback function is defined at state '{self.name}'"
+            )
             available_transitions = [cloned_transition.copy() for cloned_transition in available_transitions]
             available_transitions = cbk(available_transitions,
                                         self,
@@ -432,7 +487,9 @@ class State(AbstractState):
                                         actor.memory)
             actor.visit_log.append("  [+]   Filtering available transitions through callback")
         else:
-            self._logger.debug("[actor='{}'] No callback function is defined at state '{}'".format(actor, self.name))
+            self._logger.debug(
+                f"[actor='{actor}'] No callback function is defined at state '{self.name}'"
+            )
 
         return available_transitions
 

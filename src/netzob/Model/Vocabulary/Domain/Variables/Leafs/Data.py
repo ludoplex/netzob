@@ -152,8 +152,9 @@ class Data(AbstractVariableLeaf):
         content = parsingPath.getData(self)
         actualSize = len(content)
 
-        self._logger.debug("Learn '{}' with {} ({})".format(content.tobytes(),
-                                                            self.dataType, self.name))
+        self._logger.debug(
+            f"Learn '{content.tobytes()}' with {self.dataType} ({self.name})"
+        )
 
         try:
             minSize = maxSize = self.getFixedBitSize()
@@ -170,21 +171,18 @@ class Data(AbstractVariableLeaf):
                 format(len(content), minSize))
         else:
             # Handle specific case where the parsing can be made at the bit level
-            if isinstance(self.dataType, BitArray):
-                step = -1
-            else:
-                step = -8
-
+            step = -1 if isinstance(self.dataType, BitArray) else -8
             for size in range(min(maxSize, len(content)), minSize - 1, step):
-                self._logger.debug("Try to parse {}/{} bits for variable '{}'".format(size, min(maxSize, len(content)), self.field))
+                self._logger.debug(
+                    f"Try to parse {size}/{min(maxSize, len(content))} bits for variable '{self.field}'"
+                )
                 # size == 0 : deals with 'optional' data
                 if size == 0 or self.dataType.canParse(content[:size]):
                     # we create a new parsing path and returns it
                     newParsingPath = parsingPath.copy()
                     (addresult_succeed, addresult_parsingPaths) = newParsingPath.addResult(self, content[:size].copy())
                     if addresult_succeed:
-                        for addresult_parsingPath in addresult_parsingPaths:
-                            yield addresult_parsingPath
+                        yield from addresult_parsingPaths
                     else:
                         self._logger.debug("Parsed data does not respect a relation")
 
@@ -207,16 +205,22 @@ class Data(AbstractVariableLeaf):
         if content is None:
             raise Exception("No data assigned to the variable")
 
-        self._logger.debug("ValueCMP {} with {} ({})".format(content.tobytes(), self.dataType, self.name))
+        self._logger.debug(
+            f"ValueCMP {content.tobytes()} with {self.dataType} ({self.name})"
+        )
 
         results = []
         if len(content) >= len(expectedValue) and content[:len(
                 expectedValue)].tobytes() == expectedValue.tobytes():
             (addresult_succeed, addresult_parsingPaths) = parsingPath.addResult(self, content[:len(expectedValue)].copy())
             results.extend(addresult_parsingPaths)
-            self._logger.debug("Data '{}' can be parsed with variable {}, providing '{}'".format(content.tobytes(), self, content[:len(expectedValue)].tobytes()))
+            self._logger.debug(
+                f"Data '{content.tobytes()}' can be parsed with variable {self}, providing '{content[:len(expectedValue)].tobytes()}'"
+            )
         else:
-            self._logger.debug("Data '{}' cannot be parsed with variable {}".format(content.tobytes(), self))
+            self._logger.debug(
+                f"Data '{content.tobytes()}' cannot be parsed with variable {self}"
+            )
         return results
 
     def learn(self, parsingPath, acceptCallBack=True, carnivorous=False, triggered=False):
@@ -227,8 +231,9 @@ class Data(AbstractVariableLeaf):
         content = parsingPath.getData(self)
         actualSize = len(content)
 
-        self._logger.debug("Learn '{}' with {} ({})".format(content.tobytes(),
-                                                            self.dataType, self.name))
+        self._logger.debug(
+            f"Learn '{content.tobytes()}' with {self.dataType} ({self.name})"
+        )
 
         try:
             minSize = maxSize = self.getFixedBitSize()
@@ -245,13 +250,11 @@ class Data(AbstractVariableLeaf):
                 format(len(content), minSize))
         else:
             # Handle specific case where the parsing can be made at the bit level
-            if isinstance(self.dataType, BitArray):
-                step = -1
-            else:
-                step = -8
-
+            step = -1 if isinstance(self.dataType, BitArray) else -8
             for size in range(min(maxSize, len(content)), minSize - 1, step):
-                self._logger.debug("Try to parse {}/{} bits for variable '{}'".format(size, min(maxSize, len(content)), self.field))
+                self._logger.debug(
+                    f"Try to parse {size}/{min(maxSize, len(content))} bits for variable '{self.field}'"
+                )
                 # size == 0 : deals with 'optional' data
                 if size == 0 or self.dataType.canParse(content[:size]):
                     # we create a new parsing path and returns it
@@ -274,7 +277,7 @@ class Data(AbstractVariableLeaf):
         """
 
         while True:
-            self._logger.debug("Use variable {} ({})".format(self.dataType, self.name))
+            self._logger.debug(f"Use variable {self.dataType} ({self.name})")
 
             if variableSpecializerPath is None:
                 raise Exception("VariableSpecializerPath cannot be None")
@@ -297,14 +300,14 @@ class Data(AbstractVariableLeaf):
         """
 
         while True:
-            self._logger.debug("Regenerate variable {} ({})".format(self.dataType, self.name))
+            self._logger.debug(f"Regenerate variable {self.dataType} ({self.name})")
 
             if variableSpecializerPath is None:
                 raise Exception("VariableSpecializerPath cannot be None")
 
             newValue = self.dataType.generate()
 
-            self._logger.debug("Generated value for {}: {}".format(self, newValue))
+            self._logger.debug(f"Generated value for {self}: {newValue}")
 
             variableSpecializerPath.addResult(self, newValue)
 
@@ -319,7 +322,9 @@ class Data(AbstractVariableLeaf):
         """
 
         while True:
-            self._logger.debug("Regenerate and memorize variable '{}' ({}) for field '{}'".format(self.dataType, self.name, self.field))
+            self._logger.debug(
+                f"Regenerate and memorize variable '{self.dataType}' ({self.name}) for field '{self.field}'"
+            )
 
             if variableSpecializerPath is None:
                 raise Exception("VariableSpecializerPath cannot be None")
@@ -333,7 +338,7 @@ class Data(AbstractVariableLeaf):
                 if variableSpecializerPath.memory is not None:
                     variableSpecializerPath.memory.memorize(self, newValue)
 
-            self._logger.debug("Generated value for {}: {}".format(self, newValue.tobytes()))
+            self._logger.debug(f"Generated value for {self}: {newValue.tobytes()}")
 
             variableSpecializerPath.addResult(self, newValue.copy())
 

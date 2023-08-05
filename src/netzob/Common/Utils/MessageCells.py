@@ -75,7 +75,5 @@ class MessageCells(OrderedDict):
 
     @fields.setter
     def fields(self, fields):
-        self.__fields = []
-        for f in fields:
-            self.__fields.append(f)
+        self.__fields = list(fields)
             

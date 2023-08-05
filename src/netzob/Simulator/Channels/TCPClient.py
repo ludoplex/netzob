@@ -183,24 +183,23 @@ class TCPClient(AbstractChannel):
         """Reads the next message on the communication channel.
         Continues to read while it receives something.
         """
+        if self._socket is None:
+            raise Exception("socket is not available")
+        data = b""
+        finish = False
         reading_seg_size = 1024
 
-        if self._socket is not None:
-            data = b""
-            finish = False
-            while not finish:
-                try:
-                    recv = self._socket.recv(reading_seg_size)
-                except socket.timeout:
-                    # says we received nothing (timeout issue)
-                    recv = b""
-                if recv is None or len(recv) == 0:
-                    finish = True
-                else:
-                    data += recv
-            return data
-        else:
-            raise Exception("socket is not available")
+        while not finish:
+            try:
+                recv = self._socket.recv(reading_seg_size)
+            except socket.timeout:
+                # says we received nothing (timeout issue)
+                recv = b""
+            if recv is None or not recv:
+                finish = True
+            else:
+                data += recv
+        return data
 
     def writePacket(self, data):
         """Write on the communication channel the specified data
@@ -208,15 +207,13 @@ class TCPClient(AbstractChannel):
         :parameter data: the data to write on the channel
         :type data: :class:`bytes`
         """
-        if self._socket is not None:
-            try:
-                self._socket.sendall(data)
-                return len(data)
-            except socket.error:
-                raise ChannelDownException()
-
-        else:
+        if self._socket is None:
             raise Exception("socket is not available")
+        try:
+            self._socket.sendall(data)
+            return len(data)
+        except socket.error:
+            raise ChannelDownException()
 
     @public_api
     @typeCheck(bytes)
@@ -230,8 +227,7 @@ class TCPClient(AbstractChannel):
         """
         if self._socket is not None:
             self.write(data)
-            dataReceived = self.read()
-            return dataReceived
+            return self.read()
         else:
             raise Exception("socket is not available")
 
@@ -318,7 +314,9 @@ class TCPClient(AbstractChannel):
         if rate is not None:
             self._logger.info("Network rate limited to {:.2f} kBps ({} kbps) on {} interface".format(rate/1000, rate*8/1000, localInterface))
         self._rate = rate
-        self._logger.info("tc status on {} interface: {}".format(localInterface, NetUtils.get_rate(localInterface)))
+        self._logger.info(
+            f"tc status on {localInterface} interface: {NetUtils.get_rate(localInterface)}"
+        )
 
     @public_api
     def unset_rate(self):
@@ -328,8 +326,12 @@ class TCPClient(AbstractChannel):
         if self._rate is not None:
             NetUtils.set_rate(localInterface, None)
             self._rate = None
-            self._logger.info("Network rate limitation removed on {} interface".format(localInterface))
-        self._logger.info("tc status on {} interface: {}".format(localInterface, NetUtils.get_rate(localInterface)))
+            self._logger.info(
+                f"Network rate limitation removed on {localInterface} interface"
+            )
+        self._logger.info(
+            f"tc status on {localInterface} interface: {NetUtils.get_rate(localInterface)}"
+        )
 
 
 class TCPClientBuilder(ChannelBuilder):

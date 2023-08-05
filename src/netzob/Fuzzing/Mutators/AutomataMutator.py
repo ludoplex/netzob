@@ -101,7 +101,7 @@ class AutomataMutator(Mutator):
                 raise Exception("'target' parameter should be a State name, not None")
             return self._mutate_targeted(target)
         else:
-            raise ValueError("Unknown automata mutator strategy: '{}'".format(strategy))
+            raise ValueError(f"Unknown automata mutator strategy: '{strategy}'")
 
     def _mutate_random(self):
         r"""Generate an automaton that randomly links states together, and
@@ -124,12 +124,10 @@ class AutomataMutator(Mutator):
 
             for symbol in new_automata.symbols:
 
-                # Do not add a new transition between 2 states, if it already exists with the same input symbol
-                stop = False
-                for t in state.transitions:
-                    if t.endState == ending_state and t.inputSymbol == symbol:
-                        stop = True
-                        break
+                stop = any(
+                    t.endState == ending_state and t.inputSymbol == symbol
+                    for t in state.transitions
+                )
                 if stop:
                     continue
 
@@ -161,12 +159,10 @@ class AutomataMutator(Mutator):
 
                 for symbol in new_automata.symbols:
 
-                    # Do not add a new transition between 2 states, if it already exists with the same input symbol
-                    stop = False
-                    for t in initial_state.transitions:
-                        if t.endState == ending_state and t.inputSymbol == symbol:
-                            stop = True
-                            break
+                    stop = any(
+                        t.endState == ending_state and t.inputSymbol == symbol
+                        for t in initial_state.transitions
+                    )
                     if stop:
                         continue
 
@@ -200,7 +196,9 @@ class AutomataMutator(Mutator):
         """
 
         if not isinstance(target, str):
-            raise TypeError("'target' parameter should be a state name, not '{}' of type '{}'".format(target, type(target)))
+            raise TypeError(
+                f"'target' parameter should be a state name, not '{target}' of type '{type(target)}'"
+            )
 
         new_automata = self.automata.copy()
         new_states = new_automata.getStates(main_states=True)
@@ -345,8 +343,9 @@ class AutomataMutator(Mutator):
         shortest = None
         for transition in self.automata.getState(start_name).transitions:
             if transition.endState.name not in path:
-                newpath = self._find_shortest_path(transition.endState.name, end_name, path)
-                if newpath:
+                if newpath := self._find_shortest_path(
+                    transition.endState.name, end_name, path
+                ):
                     if not shortest or len(newpath) < len(shortest):
                         shortest = newpath
         return shortest
@@ -364,6 +363,7 @@ class AutomataMutator(Mutator):
     def automata(self, automata):
         # Sanity checks
         if not isinstance(automata, Automata):
-            raise TypeError("Mutator automata should be of type Automata. Received object: '{}'"
-                            .format(automata))
+            raise TypeError(
+                f"Mutator automata should be of type Automata. Received object: '{automata}'"
+            )
         self._automata = automata

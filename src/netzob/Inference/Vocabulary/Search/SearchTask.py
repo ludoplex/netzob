@@ -75,7 +75,7 @@ class SearchTask(object):
         :type properties: :class:`dict`
 
         """
-        self.__properties = dict()
+        self.__properties = {}
         self.data = data
         self.description = description
         self.properties = properties

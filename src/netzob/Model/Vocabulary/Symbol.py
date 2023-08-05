@@ -196,16 +196,12 @@ class Symbol(AbstractField):
     def __eq__(self, other):
         if not isinstance(other, Symbol):
             return False
-        if other is None:
-            return False
-        return self.name == other.name
+        return False if other is None else self.name == other.name
 
     def __ne__(self, other):
         if other is None:
             return True
-        if not isinstance(other, Symbol):
-            return True
-        return other.name != self.name
+        return True if not isinstance(other, Symbol) else other.name != self.name
 
     def __key(self):
         return id(self)
@@ -273,11 +269,10 @@ class Symbol(AbstractField):
              |--   Data (Raw(nbBytes=1)) [FuzzingMode.GENERATE]
 
         """
-        tab = ["|--  " for x in range(deepness)]
+        tab = ["|--  " for _ in range(deepness)]
         tab.append(str(self.name))
         lines = [''.join(tab)]
-        for f in self.fields:
-            lines.append(f.str_structure(preset, deepness + 1))
+        lines.extend(f.str_structure(preset, deepness + 1) for f in self.fields)
         return '\n'.join(lines)
 
     @public_api
@@ -327,7 +322,9 @@ class Symbol(AbstractField):
         for specializing_path in specializing_paths:
             data = specializing_path.generatedContent
             if len(data) % 8 != 0:
-                raise GenerationException("specialize() produced {} bits, which is not aligned on 8 bits. You should review the symbol model.".format(len(data)))
+                raise GenerationException(
+                    f"specialize() produced {len(data)} bits, which is not aligned on 8 bits. You should review the symbol model."
+                )
             yield data.tobytes()
 
     @public_api

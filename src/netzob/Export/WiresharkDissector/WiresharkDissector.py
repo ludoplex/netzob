@@ -127,9 +127,7 @@ class WiresharkDissector(object):
             # Generate List of Lists with the first i-th bytes of the messages
             list = []
             for s in symbols:
-                msg_list = []
-                for m in s.messages:
-                    msg_list.append(m.data[:i])
+                msg_list = [m.data[:i] for m in s.messages]
                 list.append(msg_list)
 
             # search for ever identifier in every list for every symbol if its unique or not
@@ -137,13 +135,10 @@ class WiresharkDissector(object):
                 list.remove(msg_list)
                 for m in msg_list:
                     for other_msg_list in list:
-                        # if an identifier is found in an others symbol identifier list besides its own:
-                        # break and search with a longer identifier
-                        if m in other_msg_list:
-                            i = i + 1
-                            break  # Break through all for loop layers to the while-loop
-                        else:
+                        if m not in other_msg_list:
                             continue
+                        i = i + 1
+                        break  # Break through all for loop layers to the while-loop
                     else:
                         continue
                     break
@@ -154,9 +149,7 @@ class WiresharkDissector(object):
                 found = True
         shortestUniqueIndetifer = []
         for s in symbols:
-            msg_list = []
-            for m in s.messages:
-                msg_list.append(m.data[:i])
+            msg_list = [m.data[:i] for m in s.messages]
             shortestUniqueIndetifer.append(msg_list)
         return shortestUniqueIndetifer
 
@@ -206,12 +199,11 @@ class WiresharkDissector(object):
             endian = ''
 
         if domain.dataType.typeName == 'Integer' and int(domain.dataType.unitSize) >= 32:
-            dataRep = ':'+endian + sign + dataType[:-2] + '64()'
+            return f':{endian}{sign}{dataType[:-2]}64()'
         elif endian + sign + dataType == '':
-            dataRep = ''
+            return ''
         else:
-            dataRep = ':'+endian + sign + dataType
-        return dataRep
+            return f':{endian}{sign}{dataType}'
 
     @typeCheck(LUACodeBuffer, AbstractField, list, dict)
     def __writeDynSizeBlock(self, buf, field, sorted_ivalues, size_field_data=None):
@@ -232,8 +224,12 @@ class WiresharkDissector(object):
             data_representation = self.__getDataRepresentation(field.domain)
         with buf.new_block("do"):
             # List with values from Netzob
-            buf << "local values = {{{}}}"\
-                .format(", ".join('"{}"'.format(val) for val in sorted_ivalues))
+            (
+                buf
+                << "local values = {{{}}}".format(
+                    ", ".join(f'"{val}"' for val in sorted_ivalues)
+                )
+            )
             with buf.new_block("for k,v in next,values,nil do"):
                 buf << "local vlen = v:len() / 2"
                 # Search for every list element in the protocol and determine the length in the process
@@ -241,14 +237,14 @@ class WiresharkDissector(object):
                     # Handling if its a Size field
                     if size_field_data is not None:
                         buf << 'size_{target_nr} = (buffer(idx,vlen){data_rep} - {offset})*{factor}' \
-                            .format(data_rep=data_representation, **size_field_data)
+                                .format(data_rep=data_representation, **size_field_data)
                         buf << 'subtree:add(buffer(idx,vlen), "Size of {prefix}: " .. size_{target_nr})' \
-                            .format(prefix=size_field_data['target_name'],
+                                .format(prefix=size_field_data['target_name'],
                                     target_nr=size_field_data['target_nr'])
                     # Handling if its no Size Field
                     else:
                         buf << 'subtree:add(buffer(idx,vlen), "{prefix}: " .. tostring(buffer(idx,vlen){data_rep}))'\
-                            .format(prefix=field.name, data_rep=data_representation)
+                                .format(prefix=field.name, data_rep=data_representation)
                     buf << "idx = idx + vlen"
                     buf << "break"
 
@@ -268,18 +264,18 @@ class WiresharkDissector(object):
             data_representation = self.__getDataRepresentation(field.domain, dataType='uint()')
         else:
             data_representation = self.__getDataRepresentation(field.domain)
-        with buf.new_block("if buffer(idx):len() >= {} then".format(j)):
+        with buf.new_block(f"if buffer(idx):len() >= {j} then"):
             # Handling if its a Size field
             if size_field_data is not None:
                 buf << 'size_{target_nr} = (buffer(idx,{length}){data_rep} - {offset})*{factor}' \
-                    .format(length=j, data_rep=data_representation, **size_field_data)
+                        .format(length=j, data_rep=data_representation, **size_field_data)
                 buf << 'subtree:add(buffer(idx,{length}), "Size of {prefix}: " .. size_{target_nr})' \
-                    .format(length=j, prefix=size_field_data['target_name'], target_nr=size_field_data['target_nr'])
+                        .format(length=j, prefix=size_field_data['target_name'], target_nr=size_field_data['target_nr'])
             # Handling if its no Size Field
             else:
                 buf << 'subtree:add(buffer(idx,{length}), "{prefix}: " .. tostring(buffer(idx,{length}){data_rep}))'\
-                    .format(length=j, prefix=field.name, data_rep=data_representation)
-            buf << "idx = idx + {}".format(j)
+                        .format(length=j, prefix=field.name, data_rep=data_representation)
+            buf << f"idx = idx + {j}"
 
     @typeCheck(LUACodeBuffer, AbstractField, list, int)
     def __writeSizeFieldDependentBlock(self, buf, field, target_nr):
@@ -291,10 +287,10 @@ class WiresharkDissector(object):
         :return: Output is writen to the passed buffer object. No return value
         '''
         data_representation = self.__getDataRepresentation(field.domain)
-        with buf.new_block("if buffer(idx):len() >= size_{} then".format(target_nr)):
-                buf << 'subtree:add(buffer(idx,size_{target_nr}), "{prefix}: " .. tostring(buffer(idx,size_{target_nr}){data_rep}))' \
+        with buf.new_block(f"if buffer(idx):len() >= size_{target_nr} then"):
+            buf << 'subtree:add(buffer(idx,size_{target_nr}), "{prefix}: " .. tostring(buffer(idx,size_{target_nr}){data_rep}))' \
                     .format(target_nr=target_nr, prefix=field.name, data_rep=data_representation)
-                buf << "idx = idx + size_{}".format(target_nr)
+            buf << f"idx = idx + size_{target_nr}"
 
     @typeCheck(list)
     def __writeHeuristicDissector(self,symbols):
@@ -316,20 +312,26 @@ class WiresharkDissector(object):
         buf << '''{dissector_name} = Proto("{dissector_name}", "{dissector_name} Protocol")'''.format(dissector_name=heur_dissector_name)
         with buf.new_block('function {dissector_name}.dissector(buffer, pinfo, tree)'.format(dissector_name=heur_dissector_name)):
             for i,uid_list in enumerate(uniqueIdentifier):
-                # Get Hex-Values from the UIDs
-                hex_values = []
-                for v in uid_list:
-                    hex_values.append(HexaString.encode(v, AbstractType.defaultUnitSize,
-                                                        AbstractType.defaultEndianness,
-                                                        AbstractType.defaultSign))
-                sorted_UIDs = sorted(set(str(v)[2:-1] for v in hex_values if v), key=len, reverse=True)
+                hex_values = [
+                    HexaString.encode(
+                        v,
+                        AbstractType.defaultUnitSize,
+                        AbstractType.defaultEndianness,
+                        AbstractType.defaultSign,
+                    )
+                    for v in uid_list
+                ]
+                sorted_UIDs = sorted(
+                    {str(v)[2:-1] for v in hex_values if v}, key=len, reverse=True
+                )
                 del hex_values
 
                 ctx = self.__getMessageContext(symbols[i])
 
                 # List with the first n bytes which happen to be unique for this symbol
-                buf << "local values = {{{}}}" \
-                    .format(", ".join('"{}"'.format(val) for val in sorted_UIDs))
+                buf << "local values = {{{}}}".format(
+                    ", ".join(f'"{val}"' for val in sorted_UIDs)
+                )
                 buf << 'local match = false'
                 with buf.new_block("for k,v in next,values,nil do"):
                     buf << "local vlen = v:len() / 2"
@@ -393,38 +395,40 @@ class WiresharkDissector(object):
         fields = sym.getLeafFields()
 
         # Find Size-Relation in the Fields
-        size_relation = dict()
+        size_relation = {}
         for i, field in enumerate(fields):
             if field.domain.varType == 'Size':
                 if len(field.domain.fieldDependencies) == 1:
                     target_field = field.domain.fieldDependencies[0]
-                    size_data = dict()
-                    size_data['target_nr'] = fields.index(target_field)
+                    size_data = {'target_nr': fields.index(target_field)}
                     size_data['target_name'] = target_field.name
                     size_data['factor'] = float(1)/field.domain.factor/8.0
                     size_data['offset'] = field.domain.offset
                     size_relation[i] = size_data
-                    #size_relation[fields.index(target_field)] = size_data
                 else:
-                    self._logger.error("Can't handle Size-Field which revere to more than one Field: {}"
-                                       .format(field.name))
+                    self._logger.error(
+                        f"Can't handle Size-Field which revere to more than one Field: {field.name}"
+                    )
         # write the LUA Code for every field
         with buf.new_block():
             for i,field in enumerate(fields):
                 ivalues = field.getValues(encoded=False, styled=False)
-                hex_values = []
-                for v in ivalues:
-                    hex_values.append(HexaString.encode(v, field.domain.dataType.unitSize, field.domain.dataType.endianness, field.domain.dataType.sign))
-
-                sorted_ivalues = sorted(set(str(v)[2:-1] for v in hex_values if v), key=len, reverse=True)
+                hex_values = [
+                    HexaString.encode(
+                        v,
+                        field.domain.dataType.unitSize,
+                        field.domain.dataType.endianness,
+                        field.domain.dataType.sign,
+                    )
+                    for v in ivalues
+                ]
+                sorted_ivalues = sorted(
+                    {str(v)[2:-1] for v in hex_values if v}, key=len, reverse=True
+                )
                 del hex_values
 
                 # Get the relevant size relation data for this field if existing
-                if i in size_relation.keys():
-                    size_field_data = size_relation[i]
-                else:
-                    size_field_data = None
-
+                size_field_data = size_relation.get(i, None)
                 # Write size-dependent field
                 relation_found = False
                 for size_data in size_relation.values():
@@ -432,7 +436,6 @@ class WiresharkDissector(object):
                         self.__writeSizeFieldDependentBlock(buf, field, size_data['target_nr'])
                         relation_found = True
 
-                # Write fields without size field
                 if relation_found == False:
                     if len(set(map(len, ivalues))) > 1:
                         self.__writeDynSizeBlock(buf, field, sorted_ivalues,size_field_data)
@@ -476,7 +479,7 @@ class WiresharkDissector(object):
             endian = endianness_switcher.get( sym.fields[0].domain.dataType.endianness, '')
         else:
             endian = ''
-        data_rep = ':'+endian+sign+'string()'
+        data_rep = f':{endian}{sign}string()'
 
         # Due to a limitation in Wireshark the Text is splitted in blocks of 239 Bytes. (240 bytes are truncated)
         with buf.new_block():
@@ -484,11 +487,11 @@ class WiresharkDissector(object):
                 buf << "local remaining_len = buffer(idx):len()"
                 with buf.new_block("if remaining_len >= 239 then"):
                     buf << 'subtree:add(buffer(idx, 239), tostring(buffer(idx,239){data_rep}))' \
-                        .format(data_rep=data_rep)
+                            .format(data_rep=data_rep)
                     buf << "idx = idx + 239"
                     buf << "else"
                     buf << 'subtree:add(buffer(idx, remaining_len), tostring(buffer(idx,remaining_len){data_rep}))' \
-                        .format(data_rep=data_rep)
+                            .format(data_rep=data_rep)
                     buf << "idx = idx + remaining_len"
 
         return buf.getvalue()

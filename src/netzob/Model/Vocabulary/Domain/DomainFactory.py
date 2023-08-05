@@ -111,55 +111,44 @@ class DomainFactory(object):
         if isinstance(domain, list):
             if len(domain) == 1:
                 return DomainFactory.normalizeDomain(domain[0])
-        if isinstance(domain, Alt):
-            result = domain
-        else:
-            result = Alt()
-        if isinstance(domain, (list, Alt)):
-            # Eliminate duplicate elements
-            tmpResult = []
-            if isinstance(domain, list):
-                for child in domain:
-                    tmpResult.append(DomainFactory.normalizeDomain(child))
-            else:
-                for child in domain.children:
-                    tmpResult.append(DomainFactory.normalizeDomain(child))
-            uniqResult = []
-            for elt in tmpResult:
-                if isinstance(elt, AbstractVariableNode):
-                    uniqResult.append(elt)
-                else:
-                    found = False
-                    for uElt in uniqResult:
-                        if uElt == elt:
-                            found = True
-                            break
-                    if found is False:
-                        uniqResult.append(elt)
-            result.children = []
-            for elt in uniqResult:
-                result.children.append(elt)
-        else:
+        result = domain if isinstance(domain, Alt) else Alt()
+        if not isinstance(domain, (list, Alt)):
             raise TypeError(
                 "Impossible to normalize the provided domain as an alternate.")
+        # Eliminate duplicate elements
+        tmpResult = []
+        if isinstance(domain, list):
+            tmpResult.extend(DomainFactory.normalizeDomain(child) for child in domain)
+        else:
+            tmpResult.extend(
+                DomainFactory.normalizeDomain(child) for child in domain.children
+            )
+        uniqResult = []
+        for elt in tmpResult:
+            if isinstance(elt, AbstractVariableNode):
+                uniqResult.append(elt)
+            else:
+                found = elt in uniqResult
+                if not found:
+                    uniqResult.append(elt)
+        result.children = list(uniqResult)
         return result
 
     @staticmethod
     def __normalizeAggregateDomain(domain):
-        if isinstance(domain, Agg):
-            normalized_children = []
-            for child in domain.children:
-                if type(child) == type and child == SELF:
-                    normalized_children.append(child)
-                else:
-                    try:
-                        normalized_children.append(DomainFactory.normalizeDomain(child))
-                    except RecursionError as e:
-                        pass
-                domain.children = normalized_children
-        else:
+        if not isinstance(domain, Agg):
             raise TypeError(
                 "Impossible to normalize the provided domain as an aggregate.")
+        normalized_children = []
+        for child in domain.children:
+            if type(child) == type and child == SELF:
+                normalized_children.append(child)
+            else:
+                try:
+                    normalized_children.append(DomainFactory.normalizeDomain(child))
+                except RecursionError as e:
+                    pass
+            domain.children = normalized_children
         return domain
 
     @staticmethod

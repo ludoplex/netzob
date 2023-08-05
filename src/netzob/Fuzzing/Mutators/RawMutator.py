@@ -129,13 +129,14 @@ class RawMutator(DomainMutator):
         FuzzingMode.GENERATE
 
         """
-        m = RawMutator(self.domain,
-                       mode=self.mode,
-                       generator=self.generator,
-                       seed=self.seed,
-                       counterMax=self.counterMax,
-                       lengthBitSize=self.lengthBitSize)
-        return m
+        return RawMutator(
+            self.domain,
+            mode=self.mode,
+            generator=self.generator,
+            seed=self.seed,
+            counterMax=self.counterMax,
+            lengthBitSize=self.lengthBitSize,
+        )
 
     def count(self):
         r"""

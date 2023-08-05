@@ -142,25 +142,22 @@ class Automata(object):
                 new_transitions.append(new_transition)
 
                 # Handle startState
-                if transition.startState in map_new_states.keys():
+                if transition.startState in map_new_states:
                     new_transition._startState = map_new_states[transition.startState]
                 else:
                     new_transition._startState = transition.startState.copy()
                     map_new_states[transition.startState] = new_transition.startState
 
                 # Handle endState
-                if transition.endState in map_new_states.keys():
+                if transition.endState in map_new_states:
                     new_transition.endState = map_new_states[transition.endState]
                 else:
                     new_transition.endState = transition.endState.copy()
                     map_new_states[transition.endState] = new_transition.endState
 
-            if state in map_new_states.keys():
-                map_new_states[state].transitions = new_transitions
-            else:
+            if state not in map_new_states.keys():
                 map_new_states[state] = state.copy()
-                map_new_states[state].transitions = new_transitions
-
+            map_new_states[state].transitions = new_transitions
         automata = Automata(map_new_states[self.initialState], self.symbols)
         automata.cbk_read_symbol_timeout = self.cbk_read_symbol_timeout
         automata.cbk_read_unexpected_symbol = self.cbk_read_unexpected_symbol
@@ -229,30 +226,20 @@ class Automata(object):
         :return: a string containing the dot code of the automata.
         :rtype: a :class:`list`
         """
-        dotCode = []
-        dotCode.append("digraph G {")
-
+        dotCode = ["digraph G {"]
         # First we include all the states declared in the automata
         states = self.getStates()
         for state in states:
-            if state.active:
-                color = "red"
-            else:
-                color = "white"
-
-            if state == self.initialState:
-                shape = "doubleoctagon"
-            else:
-                shape = "ellipse"
-
+            color = "red" if state.active else "white"
+            shape = "doubleoctagon" if state == self.initialState else "ellipse"
             descr = state.name
 
-            for cbk in state.cbk_modify_transition:
+            for _ in state.cbk_modify_transition:
                 descr += " [CBK modify transition] "
 
             dotCode.append(
-                '"{}" [shape={}, label="{}", style=filled, fillcolor={}, URL="{}"];'.
-                format(state.name, shape, descr, color, id(state)))
+                f'"{state.name}" [shape={shape}, label="{descr}", style=filled, fillcolor={color}, URL="{id(state)}"];'
+            )
 
         for inputState in states:
             for transition in inputState.transitions:
@@ -260,14 +247,12 @@ class Automata(object):
 
                 descr = transition.description
 
-                for cbk in transition.cbk_modify_symbol:
+                for _ in transition.cbk_modify_symbol:
                     descr += " [CBK modify symbol] "
 
                 dotCode.append(
-                    '"{}" -> "{}" [fontsize=5, label="{}", URL="{}"];'.
-
-                    format(inputState.name, outputState.name,
-                           descr, id(transition)))
+                    f'"{inputState.name}" -> "{outputState.name}" [fontsize=5, label="{descr}", URL="{id(transition)}"];'
+                )
 
         dotCode.append("}")
 
@@ -308,28 +293,25 @@ class Automata(object):
         """
 
         states = []
-        toAnalyze = []
-        toAnalyze.append(self.initialState)
-        while (len(toAnalyze) > 0):
+        toAnalyze = [self.initialState]
+        while toAnalyze:
             currentState = toAnalyze.pop()
             if currentState is not None:
-                found = False
-                for tmpState in states:
-                    if id(tmpState) == id(currentState):
-                        found = True
-                        break
+                found = any(id(tmpState) == id(currentState) for tmpState in states)
                 if not found:
                     for transition in currentState.transitions:
                         outputState = transition.endState
-                        found = False
-                        for tmpState in states:
-                            if id(tmpState) == id(outputState):
-                                found = True
-                                break
-                        for tmpState in toAnalyze:
-                            if id(tmpState) == id(outputState):
-                                found = True
-                                break
+                        found = next(
+                            (
+                                True
+                                for tmpState in toAnalyze
+                                if id(tmpState) == id(outputState)
+                            ),
+                            any(
+                                id(tmpState) == id(outputState)
+                                for tmpState in states
+                            ),
+                        )
                         if not found:
                             toAnalyze.append(outputState)
                     states.append(currentState)
@@ -340,9 +322,11 @@ class Automata(object):
                 if len(state.transitions) == 1 and isinstance(state.transitions[0], OpenChannelTransition):
                     states_to_drop.append(state)
                 else:
-                    for t in state.transitions:
-                        if isinstance(t, CloseChannelTransition):
-                            states_to_drop.append(t.endState)
+                    states_to_drop.extend(
+                        t.endState
+                        for t in state.transitions
+                        if isinstance(t, CloseChannelTransition)
+                    )
         for state in states_to_drop:
             states.remove(state)
         return states
@@ -364,7 +348,7 @@ class Automata(object):
             if state.name == name:
                 return state
         else:
-            raise KeyError("State with name '{}' does not exist".format(name))
+            raise KeyError(f"State with name '{name}' does not exist")
 
     @public_api
     def getTransitions(self):
@@ -398,7 +382,7 @@ class Automata(object):
             if transition.name == name:
                 return transition
         else:
-            raise KeyError("Transition with name '{}' does not exist".format(name))
+            raise KeyError(f"Transition with name '{name}' does not exist")
 
     @staticmethod
     @typeCheck(list, list)
@@ -1383,10 +1367,7 @@ class Automata(object):
         # Create mutator
         mutator = AutomataMutator(self, generator=generator, seed=seed)
 
-        # Mutat automata
-        mutatedAutomata = mutator.mutate(strategy=strategy, target=target)
-
-        return mutatedAutomata
+        return mutator.mutate(strategy=strategy, target=target)
 
     ## Public properties ##
 

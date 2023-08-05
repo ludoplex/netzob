@@ -63,7 +63,7 @@ class test_command(Command):
             # Else, assume the path is gotten from the 'python setup.py build' command
             arch = os.uname()[-1]
             python_version = sys.version[:3]
-            build_lib_path = "build/lib.linux-" + arch + "-" + python_version
+            build_lib_path = f"build/lib.linux-{arch}-{python_version}"
             sys.path.append(build_lib_path)
 
         sys.path.insert(0, 'test/src/')
@@ -76,7 +76,7 @@ class test_command(Command):
         currentTestSuite = suite_global.getSuite()
 
         testResults = None
-    
+
         if self.reportfile is None or len(self.reportfile) == 0:
             runner = unittest.TextTestRunner(verbosity = 1)
             testResults = runner.run(currentTestSuite)
@@ -101,12 +101,14 @@ class test_command(Command):
         with open(filePath, 'r') as aFile:
             data = aFile.read()
 
-        cleanData = ""
-        for c in data:
-            if (0x1f < ord(c) < 0x80) or (ord(c) == 0x9) or (ord(c) == 0xa) or (ord(c) == 0xd):
-                cleanData += c
-            else:
-                cleanData += repr(c)
-
+        cleanData = "".join(
+            c
+            if (0x1F < ord(c) < 0x80)
+            or (ord(c) == 0x9)
+            or (ord(c) == 0xA)
+            or (ord(c) == 0xD)
+            else repr(c)
+            for c in data
+        )
         with open(filePath, 'w') as aFile:
             aFile.write(cleanData)

@@ -119,8 +119,7 @@ class CustomEthernetChannel(AbstractChannel):
         self.__interface = NetUtils.getLocalInterfaceFromMac(self.localMac)
 
         if self.__interface is None:
-            raise Exception(
-                "No interface found for '{}' MAC address".format(self.localMac))
+            raise Exception(f"No interface found for '{self.localMac}' MAC address")
 
         self.initHeader()
 
@@ -188,17 +187,16 @@ class CustomEthernetChannel(AbstractChannel):
     def read(self):
         """Read the next message on the communication channel.
         """
-        if self._socket is not None:
-            (data, _) = self._socket.recvfrom(65535)
-
-            # Remove Ethernet header from received data
-            ethHeaderLen = 14
-            if len(data) > ethHeaderLen:
-                data = data[ethHeaderLen:]
-
-            return data
-        else:
+        if self._socket is None:
             raise Exception("socket is not available")
+        (data, _) = self._socket.recvfrom(65535)
+
+        # Remove Ethernet header from received data
+        ethHeaderLen = 14
+        if len(data) > ethHeaderLen:
+            data = data[ethHeaderLen:]
+
+        return data
 
     @public_api
     def sendReceive(self, data):
@@ -208,20 +206,18 @@ class CustomEthernetChannel(AbstractChannel):
         :param data: the data to write on the channel
         :type data: :class:`bytes`
         """
-        if self._socket is not None:
-
-            rawRemoteMac = binascii.unhexlify(self.remoteMac.replace(':', ''))
-            self.write(data)
-            while True:
-                (data, _) = self._socket.recvfrom(65535)
-                if data[6:12] == rawRemoteMac:
-                    # Remove Ethernet header from received data
-                    ethHeaderLen = 14
-                    if len(data) > ethHeaderLen:
-                        data = data[ethHeaderLen:]
-                    return data
-        else:
+        if self._socket is None:
             raise Exception("socket is not available")
+        rawRemoteMac = binascii.unhexlify(self.remoteMac.replace(':', ''))
+        self.write(data)
+        while True:
+            (data, _) = self._socket.recvfrom(65535)
+            if data[6:12] == rawRemoteMac:
+                # Remove Ethernet header from received data
+                ethHeaderLen = 14
+                if len(data) > ethHeaderLen:
+                    data = data[ethHeaderLen:]
+                return data
 
     def writePacket(self, data):
         """Write on the communication channel the specified data
@@ -240,7 +236,9 @@ class CustomEthernetChannel(AbstractChannel):
             len_data = self._socket.sendto(packet, (self.interface,
                                                     CustomEthernetChannel.ETH_P_ALL))
         except OSError as e:
-            self._logger.warning("OSError durring socket.sendto(): '{}'. Trying a second time after sleeping 1s...".format(e))
+            self._logger.warning(
+                f"OSError durring socket.sendto(): '{e}'. Trying a second time after sleeping 1s..."
+            )
             time.sleep(1)
             len_data = self._socket.sendto(packet, (self.interface,
                                                     CustomEthernetChannel.ETH_P_ALL))
@@ -340,7 +338,9 @@ class CustomEthernetChannel(AbstractChannel):
         if rate is not None:
             self._logger.info("Network rate limited to {:.2f} kBps ({} kbps) on {} interface".format(rate/1000, rate*8/1000, self.interface))
         self._rate = rate
-        self._logger.info("tc status on {} interface: {}".format(self.interface, NetUtils.get_rate(self.interface)))
+        self._logger.info(
+            f"tc status on {self.interface} interface: {NetUtils.get_rate(self.interface)}"
+        )
 
     @public_api
     def unset_rate(self):
@@ -349,8 +349,12 @@ class CustomEthernetChannel(AbstractChannel):
         if self._rate is not None:
             NetUtils.set_rate(self.interface, None)
             self._rate = None
-            self._logger.info("Network rate limitation removed on {} interface".format(self.interface))
-        self._logger.info("tc status on {} interface: {}".format(self.interface, NetUtils.get_rate(self.interface)))
+            self._logger.info(
+                f"Network rate limitation removed on {self.interface} interface"
+            )
+        self._logger.info(
+            f"tc status on {self.interface} interface: {NetUtils.get_rate(self.interface)}"
+        )
 
 
 class CustomEthernetChannelBuilder(ChannelBuilder):

@@ -105,7 +105,7 @@ class ClusterBySize(object):
         messagesByLen = OrderedDict()
         for msg in messages:
             l = len(msg.data)
-            if not l in list(messagesByLen.keys()):
+            if l not in list(messagesByLen.keys()):
                 messagesByLen[l] = []
             messagesByLen[l].append(msg)
 

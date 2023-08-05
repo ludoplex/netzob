@@ -68,7 +68,7 @@ def getPluginPaths():
     Computes and returns the path of all available plugins in the current repository.
     @return a dictionary mapping the plugin name and with its root path"""
 
-    result = dict()  #{pluginName:pluginPath}
+    result = {}
 
     pluginsSourcePath = opj(os.getcwd(), "src", "netzob_plugins")
 
@@ -80,6 +80,6 @@ def getPluginPaths():
         plugin_dir = opj(pluginsSourcePath, plugin_category)
         plugin_list = os.listdir(plugin_dir)
         for plugin_name in plugin_list:
-            if plugin_name != "__init__.py" and plugin_name != "__init__.pyc":
+            if plugin_name not in ["__init__.py", "__init__.pyc"]:
                 result[plugin_name] = opj(plugin_dir, plugin_name)
     return result

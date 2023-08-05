@@ -66,7 +66,7 @@ class PTAAutomataFactory(object):
         # Create an initial state/transition for the PTA automaton
         ptaInitialState = State("Start state")
         idx_state = 0
-        ptaStateA = State("State " + str(idx_state))
+        ptaStateA = State(f"State {idx_state}")
         ptaStateA_saved = ptaStateA
         ptaTransition = OpenChannelTransition(
             startState=ptaInitialState,
@@ -92,20 +92,18 @@ class PTAAutomataFactory(object):
                 while True:
                     # We handle the closing state
                     if isinstance(transition, CloseChannelTransition):
-                        if len(ptaStateA.transitions) > 0 and isinstance(
-                                ptaStateA.transitions[0],
-                                CloseChannelTransition):
-                            # The transition is equivalent in the PTA
-                            break
-                        else:
+                        if len(ptaStateA.transitions) <= 0 or not isinstance(
+                            ptaStateA.transitions[0], CloseChannelTransition
+                        ):
                             # This is a new transition
                             idx_state += 1
-                            ptaStateB = State("End state " + str(idx_state))
+                            ptaStateB = State(f"End state {idx_state}")
                             ptaTransition = CloseChannelTransition(
                                 startState=ptaStateA,
                                 endState=ptaStateB,
                                 name="Close transition")
-                            break
+                        # The transition is equivalent in the PTA
+                        break
                     inputSymbol = transition.inputSymbol
                     outputSymbols = transition.outputSymbols
 
@@ -120,9 +118,9 @@ class PTAAutomataFactory(object):
                                 # The transition is equivalent in the PTA
                                 newTransition = False
                                 ptaStateA = ptaStateA.transitions[0].endState
-                    if newTransition == True:
+                    if newTransition:
                         idx_state += 1
-                        ptaStateB = State("State " + str(idx_state))
+                        ptaStateB = State(f"State {idx_state}")
                         ptaTransition = Transition(
                             startState=ptaStateA,
                             endState=ptaStateB,

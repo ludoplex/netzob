@@ -69,12 +69,11 @@ class OneStateAutomataFactory(object):
         while True:
             try:
                 (source, destination, symbol) = next(it)
-                if source == client:
-                    if symbol is not None:
+                if symbol is not None:
+                    if source == client:
                         inputSymbol = symbol
                         outputSymbols = None
-                else:
-                    if symbol is not None:
+                    else:
                         outputSymbols = [symbol]
                 if inputSymbol is not None and outputSymbols is not None:
                     mainTransition = Transition(

@@ -52,16 +52,14 @@ class WrapperArgsFactory(object):
         if (function in list(self.typeList.keys())):
             self.function = function
         else:
-            raise NetzobException("Function " + str(function) +
-                                  " not implemented")
+            raise NetzobException(f"Function {str(function)} not implemented")
 
     def __str__(self):
         return str(self.args)
 
     def computeSimilarityMatrix(self, symbols):
         self.args = []
-        for s in symbols:
-            self.args.append(WrapperMessage(s.messages[0], str(id(s))))
+        self.args.extend(WrapperMessage(s.messages[0], id(s)) for s in symbols)
 
     def alignMessages(self, values):
         self.args = []

@@ -220,8 +220,7 @@ class ClusterByAlignment(object):
             maxScore = self.scores[max_i][max_j]
         while len(self.scores) > 1 and maxScore >= self.minEquivalence:
 
-            symbols_uid = [str(id(s))
-                           for s in symbols]  # List of the UID in of symbols
+            symbols_uid = [id(s) for s in symbols]
             (i_maximum, j_maximum) = (symbols_uid.index(max_i),
                                       symbols_uid.index(max_j))
             size_i = len(symbols[i_maximum].messages)
@@ -264,7 +263,7 @@ class ClusterByAlignment(object):
         # Append th new symbol to the "symbols" structure
         symbols.append(newSymbol)
 
-        return str(id(newSymbol))
+        return id(newSymbol)
 
     def _updateScore(self,
                      symbols,
@@ -321,8 +320,7 @@ class ClusterByAlignment(object):
         """Callback function called by the C extension to provide info on status
         @param donePercent: a float between 0 and 100 included
         @param currentMessage: a str which represents the current alignment status"""
-        self._logger.debug("[UPGMA status]" + str(donePercent) + "% " + str(
-            currentMessage))
+        self._logger.debug(f"[UPGMA status]{str(donePercent)}% {str(currentMessage)}")
 
     def _isFinish(self):
         """Compute if we should finish the current clustering operation.

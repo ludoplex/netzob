@@ -87,8 +87,7 @@ class GladeParser(object):
                     if isinstance(data, str):
                         data = data.encode('utf-8')
                     self.expat.Parse(data, False)
-                for event in self._queue:
-                    yield event
+                yield from self._queue
                 self._queue = []
                 if done:
                     break

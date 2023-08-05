@@ -101,23 +101,33 @@ class test_public_api(unittest.TestCase):
                             if param_name != 'self':
                                 if param.annotation == inspect.Parameter.empty:
                                     is_failure = True
-                                    log_failures.append("In class '{}', method '{}', parameter '{}' has no type annotation".format(public_class.__name__, method_name, param_name))
+                                    log_failures.append(
+                                        f"In class '{public_class.__name__}', method '{method_name}', parameter '{param_name}' has no type annotation"
+                                    )
                                 else:
-                                    log_annotations.append("In class '{}', method '{}', parameter '{}' has type annotation: '{}'".format(public_class.__name__, method_name, param_name, param.annotation))
+                                    log_annotations.append(
+                                        f"In class '{public_class.__name__}', method '{method_name}', parameter '{param_name}' has type annotation: '{param.annotation}'"
+                                    )
 
                         if signature.return_annotation == inspect.Parameter.empty:
                             is_failure = True
-                            log_failures.append("In class '{}', method '{}', return value has no type annotation".format(public_class.__name__, method_name))
+                            log_failures.append(
+                                f"In class '{public_class.__name__}', method '{method_name}', return value has no type annotation"
+                            )
                         else:
-                            log_annotations.append("In class '{}', method '{}', return value has type annotation: '{}'".format(public_class.__name__, method_name, signature.return_annotation))
+                            log_annotations.append(
+                                f"In class '{public_class.__name__}', method '{method_name}', return value has type annotation: '{signature.return_annotation}'"
+                            )
 
             # For public properties, just verify that they have a proper documentation
             interesting_members = inspect.getmembers(public_class, inspect.isdatadescriptor)
             for (method_name, method_object) in interesting_members:
                 if method_name in public_api_members:
                     if method_object.__doc__ is None:
-                            is_failure = True
-                            log_failures.append("In class '{}', property '{}' has no doc".format(public_class.__name__, method_name))
+                        is_failure = True
+                        log_failures.append(
+                            f"In class '{public_class.__name__}', property '{method_name}' has no doc"
+                        )
 
         expected_log_annotations = [
             "In class 'Symbol', method 'specialize', parameter 'presets' has type annotation: 'typing.Dict[typing.Union[str, netzob.Model.Vocabulary.Field.Field], typing.Union[bitarray.bitarray, bytes, netzob.Model.Vocabulary.Types.AbstractType.AbstractType]]'",

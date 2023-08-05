@@ -82,7 +82,6 @@ if __name__ == "__main__":
         runner = unittest.TextTestRunner()
         testResult = runner.run(currentTestSuite)
     else:
-        File = open(reportFile, "w")
-        reporter = XMLTestRunner(File)
-        reporter.run(currentTestSuite)
-        File.close()
+        with open(reportFile, "w") as File:
+            reporter = XMLTestRunner(File)
+            reporter.run(currentTestSuite)

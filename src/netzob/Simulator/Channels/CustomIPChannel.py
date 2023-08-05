@@ -177,11 +177,10 @@ class CustomIPChannel(AbstractChannel):
         IP packet.
 
         """
-        if self._socket is not None:
-            (data, _) = self._socket.recvfrom(65535)
-            return data
-        else:
+        if self._socket is None:
             raise Exception("socket is not available")
+        (data, _) = self._socket.recvfrom(65535)
+        return data
 
     def writePacket(self, data):
         """Write on the communication channel the specified data.
@@ -196,7 +195,9 @@ class CustomIPChannel(AbstractChannel):
         try:
             len_data = self._socket.sendto(packet, (self.remoteIP, 0))
         except OSError as e:
-            self._logger.warning("OSError durring socket.sendto(): '{}'. Trying a second time after sleeping 1s...".format(e))
+            self._logger.warning(
+                f"OSError durring socket.sendto(): '{e}'. Trying a second time after sleeping 1s..."
+            )
             time.sleep(1)
             len_data = self._socket.sendto(packet, (self.remoteIP, 0))
         return len_data
@@ -210,31 +211,30 @@ class CustomIPChannel(AbstractChannel):
         :param data: the data to write on the channel
         :type data: :class:`bytes`
         """
-        if self._socket is not None:
-            # get the ports from message to identify the good response (in TCP or UDP)
-            portSrcTx = (data[0] * 256) + data[1]
-            portDstTx = (data[2] * 256) + data[3]
+        if self._socket is None:
+            raise Exception("socket is not available")
+        # get the ports from message to identify the good response (in TCP or UDP)
+        portSrcTx = (data[0] * 256) + data[1]
+        portDstTx = (data[2] * 256) + data[3]
 
-            responseOk = False
-            stopWaitingResponse = False
-            self.write(data)
-            while stopWaitingResponse is False:
-                dataReceived = self._inner_read()
+        responseOk = False
+        stopWaitingResponse = False
+        self.write(data)
+        while not stopWaitingResponse:
+            dataReceived = self._inner_read()
 
-                # IHL = (Bitwise AND 00001111) x 4bytes
-                ipHeaderLen = (dataReceived[0] & 15) * 4
-                portSrcRx = (dataReceived[ipHeaderLen] * 256) + \
+            # IHL = (Bitwise AND 00001111) x 4bytes
+            ipHeaderLen = (dataReceived[0] & 15) * 4
+            portSrcRx = (dataReceived[ipHeaderLen] * 256) + \
                     dataReceived[ipHeaderLen + 1]
-                portDstRx = (dataReceived[ipHeaderLen + 2] * 256) + \
+            portDstRx = (dataReceived[ipHeaderLen + 2] * 256) + \
                     dataReceived[ipHeaderLen + 3]
 
-                stopWaitingResponse = (portSrcTx == portDstRx) and (portDstTx == portSrcRx)
-                if stopWaitingResponse:  # and not timeout
-                    responseOk = True
-            if responseOk:
-                return dataReceived[ipHeaderLen:]
-        else:
-            raise Exception("socket is not available")
+            stopWaitingResponse = (portSrcTx == portDstRx) and (portDstTx == portSrcRx)
+            if stopWaitingResponse:  # and not timeout
+                responseOk = True
+        if responseOk:
+            return dataReceived[ipHeaderLen:]
 
     def initHeader(self):
         """Initialize the IP header according to the IP format definition.
@@ -376,7 +376,9 @@ class CustomIPChannel(AbstractChannel):
         if rate is not None:
             self._logger.info("Network rate limited to {:.2f} kBps ({} kbps) on {} interface".format(rate/1000, rate*8/1000, localInterface))
         self._rate = rate
-        self._logger.info("tc status on {} interface: {}".format(localInterface, NetUtils.get_rate(localInterface)))
+        self._logger.info(
+            f"tc status on {localInterface} interface: {NetUtils.get_rate(localInterface)}"
+        )
 
     @public_api
     def unset_rate(self):
@@ -386,8 +388,12 @@ class CustomIPChannel(AbstractChannel):
         if self._rate is not None:
             NetUtils.set_rate(localInterface, None)
             self._rate = None
-            self._logger.info("Network rate limitation removed on {} interface".format(localInterface))
-        self._logger.info("tc status on {} interface: {}".format(localInterface, NetUtils.get_rate(localInterface)))
+            self._logger.info(
+                f"Network rate limitation removed on {localInterface} interface"
+            )
+        self._logger.info(
+            f"tc status on {localInterface} interface: {NetUtils.get_rate(localInterface)}"
+        )
 
 
 class CustomIPChannelBuilder(ChannelBuilder):

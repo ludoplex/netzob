@@ -2275,19 +2275,20 @@ class Actor(Thread):
 
         while not self.__stopEvent.is_set():
             try:
-                do_stop = self.execute_transition()
-                if do_stop:
+                if do_stop := self.execute_transition():
                     self.stop()
                     break
             except ActorStopException:
                 break
             except Exception as e:
-                self._logger.debug("Exception raised for actor '{}' when on the execution of state {}.".format(self.name, self.current_state))
-                self._logger.error("Exception error for actor '{}': {}".format(self.name, str(e)))
+                self._logger.debug(
+                    f"Exception raised for actor '{self.name}' when on the execution of state {self.current_state}."
+                )
+                self._logger.error(f"Exception error for actor '{self.name}': {str(e)}")
                 self._logger.warning(traceback.format_exc())
                 self.stop()
                 break
-        self._logger.debug("Actor '{}' has finished to execute".format(self.name))
+        self._logger.debug(f"Actor '{self.name}' has finished to execute")
 
     @public_api
     def execute_transition(self):
@@ -2298,28 +2299,42 @@ class Actor(Thread):
 
         """
 
-        self._logger.debug("Current state for actor '{}': '{}'.".format(self.name, self.current_state))
+        self._logger.debug(
+            f"Current state for actor '{self.name}': '{self.current_state}'."
+        )
 
         if self.current_state is None:
-            self._logger.debug("Cannot execute transition as current state is None, for actor '{}'".format(self.name))
+            self._logger.debug(
+                f"Cannot execute transition as current state is None, for actor '{self.name}'"
+            )
             return True
 
         # Execute state action
         self.current_state = self.current_state.execute(self)
 
         if self.current_state is None:
-            self._logger.debug("The execution of transition did not returned a state, for actor '{}'".format(self.name))
+            self._logger.debug(
+                f"The execution of transition did not returned a state, for actor '{self.name}'"
+            )
             return True
 
         if self.current_state is not None and self.target_state is not None and self.target_state.name == self.current_state.name:
-            self._logger.debug("[actor='{}'] Reaching the targeted state '{}'".format(self.name, self.target_state))
-            self.visit_log.append("  [+] At state '{}', we reached the targeted state '{}', so we stop".format(self.current_state, self.target_state))
+            self._logger.debug(
+                f"[actor='{self.name}'] Reaching the targeted state '{self.target_state}'"
+            )
+            self.visit_log.append(
+                f"  [+] At state '{self.current_state}', we reached the targeted state '{self.target_state}', so we stop"
+            )
             return True
 
         self.__currentnbTransitions += 1
         if self.nbMaxTransitions is not None and self.__currentnbTransitions >= self.nbMaxTransitions:
-            self._logger.debug("[actor='{}'] Max number of transitions ({}) reached".format(self.name, self.nbMaxTransitions))
-            self.visit_log.append("  [+] At state '{}', we reached the max number of transitions ({}), so we stop".format(self.current_state, self.nbMaxTransitions))
+            self._logger.debug(
+                f"[actor='{self.name}'] Max number of transitions ({self.nbMaxTransitions}) reached"
+            )
+            self.visit_log.append(
+                f"  [+] At state '{self.current_state}', we reached the max number of transitions ({self.nbMaxTransitions}), so we stop"
+            )
             return True
 
         return False
@@ -2329,7 +2344,7 @@ class Actor(Thread):
         """Stop the visit loop of the automaton.
 
         """
-        self._logger.debug("[actor='{}'] Stopping the current actor".format(self.name))
+        self._logger.debug(f"[actor='{self.name}'] Stopping the current actor")
 
         self.__stopEvent.set()
 
@@ -2349,12 +2364,14 @@ class Actor(Thread):
         """Wait for the current actor to finish the visit loop of the automaton.
 
         """
-        self._logger.debug("[actor='{}'] Waiting for the current actor to finish".format(self.name))
+        self._logger.debug(
+            f"[actor='{self.name}'] Waiting for the current actor to finish"
+        )
 
         while self.isActive():
             time.sleep(0.5)
 
-        self._logger.debug("[actor='{}'] The current actor has finished".format(self.name))
+        self._logger.debug(f"[actor='{self.name}'] The current actor has finished")
 
     @public_api
     def isActive(self):
@@ -2374,9 +2391,10 @@ class Actor(Thread):
         :rtype: :class:`str`
 
         """
-        result = "Activity log for actor '{}' ({}):\n".format(self.name, "initiator" if self.initiator else "not initiator")
-        result += "\n".join(self.visit_log)
-        return result
+        return (
+            f"""Activity log for actor '{self.name}' ({"initiator" if self.initiator else "not initiator"}):\n"""
+            + "\n".join(self.visit_log)
+        )
 
     ## Public properties ##
 
@@ -2424,7 +2442,9 @@ class Actor(Thread):
     def fuzzing_presets(self, fuzzing_presets):
         for preset in fuzzing_presets:
             if not isinstance(preset, Preset):
-                raise TypeError("The configuration should be a list of Preset objects, not a '{}'".format(fuzzing_presets))
+                raise TypeError(
+                    f"The configuration should be a list of Preset objects, not a '{fuzzing_presets}'"
+                )
         self.__fuzzing_presets = fuzzing_presets
 
     @public_api
@@ -2459,7 +2479,9 @@ class Actor(Thread):
     def presets(self, presets):
         for preset in presets:
             if not isinstance(preset, Preset):
-                raise TypeError("The configuration should be a list of Preset objects, not a '{}'".format(presets))
+                raise TypeError(
+                    f"The configuration should be a list of Preset objects, not a '{presets}'"
+                )
         self.__presets = presets
 
     @public_api

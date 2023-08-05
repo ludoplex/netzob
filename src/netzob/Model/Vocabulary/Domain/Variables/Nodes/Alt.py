@@ -241,7 +241,7 @@ class Alt(AbstractVariableNode):
             raise Exception("Cannot parse data if ALT has no children")
 
         dataToParse = parsingPath.getData(self)
-        self._logger.debug("Parse '{}' with '{}'".format(dataToParse.tobytes(), self))
+        self._logger.debug(f"Parse '{dataToParse.tobytes()}' with '{self}'")
 
         parserPaths = [parsingPath]
         parsingPath.assignData(dataToParse.copy(), self.children[0])
@@ -265,7 +265,9 @@ class Alt(AbstractVariableNode):
             else:
                 for childParsingPath in childParsingPaths:
                     data_parsed = childParsingPath.getData(child)
-                    self._logger.debug("End of Alt parsing of {}/{} with {}. Data parsed: '{}'".format(i_child + 1, len(self.children), parsingPath, data_parsed))
+                    self._logger.debug(
+                        f"End of Alt parsing of {i_child + 1}/{len(self.children)} with {parsingPath}. Data parsed: '{data_parsed}'"
+                    )
                     childParsingPath.addResult(self, data_parsed)
                     yield childParsingPath
         self._logger.debug("End of parsing of Alt variable")
@@ -313,17 +315,17 @@ class Alt(AbstractVariableNode):
             if 0 <= generated_value < len(self.children):
                 child = self.children[generated_value]
             else:
-                raise ValueError("Field position '{}' is bigger than the length of available children '{}'"
-                                 .format(generated_value, len(self.children)))
+                raise ValueError(
+                    f"Field position '{generated_value}' is bigger than the length of available children '{len(self.children)}'"
+                )
 
         elif callable(self.callback):
             i_child = self.callback(specializingPath, self.children)
             if not isinstance(i_child, int):
-                raise Exception("The Alt callback return value must be the index"
-                                " (int) of the child to select, not '{}'"
-                                .format(i_child))
+                raise Exception(
+                    f"The Alt callback return value must be the index (int) of the child to select, not '{i_child}'"
+                )
             child = self.children[i_child]
-        # Else, randomly chose the child
         else:
             child = random.choice(self.children)
 
@@ -340,17 +342,21 @@ class Alt(AbstractVariableNode):
         for childSpecializingPath in childSpecializingPaths:
             if childSpecializingPath.hasData(child):
                 value = childSpecializingPath.getData(child)
-                self._logger.debug("Generated value for {}: {} ({})".format(self, value, id(self)))
+                self._logger.debug(f"Generated value for {self}: {value} ({id(self)})")
                 childSpecializingPath.addResult(self, value)
 
-                yield childSpecializingPath
             else:
-                self._logger.debug("The ALT child ('{}') has no content, therefore we don't produce content for the ALT".format(child))
-                self._logger.debug("Callback registered on ancestor node: '{}'".format(self))
-                self._logger.debug("Callback registered due to absence of content in target: '{}'".format(child))
+                self._logger.debug(
+                    f"The ALT child ('{child}') has no content, therefore we don't produce content for the ALT"
+                )
+                self._logger.debug(f"Callback registered on ancestor node: '{self}'")
+                self._logger.debug(
+                    f"Callback registered due to absence of content in target: '{child}'"
+                )
                 childSpecializingPath.registerVariablesCallBack(
                     [child], self, parsingCB=False)
-                yield childSpecializingPath
+
+            yield childSpecializingPath
 
     @public_api
     @property
@@ -365,7 +371,7 @@ class Alt(AbstractVariableNode):
     @callback.setter  # type: ignore
     def callback(self, callback):
         if not callable(callback):
-            raise TypeError("Callback function should be a callable, not a '{}'".format(callback))
+            raise TypeError(f"Callback function should be a callable, not a '{callback}'")
         self._callback = callback
 
 

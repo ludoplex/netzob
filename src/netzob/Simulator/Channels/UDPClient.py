@@ -181,11 +181,10 @@ class UDPClient(AbstractChannel):
     def read(self):
         """Read the next message on the communication channel.
         """
-        if self._socket is not None:
-            (data, remoteAddr) = self._socket.recvfrom(1024)
-            return data
-        else:
+        if self._socket is None:
             raise Exception("socket is not available")
+        (data, remoteAddr) = self._socket.recvfrom(1024)
+        return data
 
     def writePacket(self, data):
         """Write on the communication channel the specified data
@@ -194,8 +193,7 @@ class UDPClient(AbstractChannel):
         :type data: :class:`bytes`
         """
         if self._socket is not None:
-            len_data = self._socket.sendto(data, (self.remoteIP, self.remotePort))
-            return len_data
+            return self._socket.sendto(data, (self.remoteIP, self.remotePort))
         else:
             raise Exception("socket is not available")
 
@@ -291,7 +289,9 @@ class UDPClient(AbstractChannel):
         if rate is not None:
             self._logger.info("Network rate limited to {:.2f} kBps ({} kbps) on {} interface".format(rate/1000, rate*8/1000, localInterface))
         self._rate = rate
-        self._logger.info("tc status on {} interface: {}".format(localInterface, NetUtils.get_rate(localInterface)))
+        self._logger.info(
+            f"tc status on {localInterface} interface: {NetUtils.get_rate(localInterface)}"
+        )
 
     @public_api
     def unset_rate(self):
@@ -301,8 +301,12 @@ class UDPClient(AbstractChannel):
         if self._rate is not None:
             NetUtils.set_rate(localInterface, None)
             self._rate = None
-            self._logger.info("Network rate limitation removed on {} interface".format(localInterface))
-        self._logger.info("tc status on {} interface: {}".format(localInterface, NetUtils.get_rate(localInterface)))
+            self._logger.info(
+                f"Network rate limitation removed on {localInterface} interface"
+            )
+        self._logger.info(
+            f"tc status on {localInterface} interface: {NetUtils.get_rate(localInterface)}"
+        )
 
 
 class UDPClientBuilder(ChannelBuilder):

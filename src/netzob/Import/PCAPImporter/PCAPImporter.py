@@ -209,8 +209,8 @@ class PCAPImporter(object):
             self._logger.debug("Unkown datalinks")
 
         if self.importLayer > 1 and self.datalink != pcapy.DLT_EN10MB and self.datalink != pcapy.DLT_LINUX_SLL \
-                and self.datalink != pcapy.DLT_RAW and self.datalink != PCAPImporter.PROTOCOL201:
-            self._logger.debug('Datalink: ' + str(self.datalink))
+                    and self.datalink != pcapy.DLT_RAW and self.datalink != PCAPImporter.PROTOCOL201:
+            self._logger.debug(f'Datalink: {str(self.datalink)}')
             errorMessage = _("This pcap cannot be imported since the " +
                              "layer 2 is not supported ({0})").format(
                                  str(self.datalink))
@@ -223,7 +223,7 @@ class PCAPImporter(object):
         """Internal callback executed on each packet when parsing the pcap"""
         (secs, usecs) = header.getts()
         epoch = secs + (usecs / 1000000.0)
-        self._logger.debug('ImportLayer = '+ str(self.importLayer))
+        self._logger.debug(f'ImportLayer = {str(self.importLayer)}')
         if self.importLayer == 1:
             if len(payload) == 0:
                 return
@@ -313,7 +313,7 @@ class PCAPImporter(object):
             l5Message = L4NetworkMessage(
                 l4Payload, epoch, l2Proto, l2SrcAddr, l2DstAddr, l3Proto,
                 l3SrcAddr, l3DstAddr, l4Proto, l4SrcPort, l4DstPort)
-            
+
             self.messages.add(l5Message)
 
     def __decodeLayer2(self, header, payload):
@@ -342,11 +342,8 @@ class PCAPImporter(object):
             etherType = layer2.get_ether_type()
         elif self.datalink == PCAPImporter.PROTOCOL201:
             l2Proto = "Protocol 201"
-            hdr = payload.encode('hex')[0:8]
-            if hdr[6:] == "01":
-                l2SrcAddr = "Received"
-            else:
-                l2SrcAddr = "Sent"
+            hdr = payload.encode('hex')[:8]
+            l2SrcAddr = "Received" if hdr[6:] == "01" else "Sent"
             l2DstAddr = None
             l2Payload = payload[8:]
             etherType = payload[4:6]
@@ -475,7 +472,7 @@ class PCAPImporter(object):
 
         # Verify the expected import layer
         availableLayers = [1, 2, 3, 4, 5]
-        if not importLayer in availableLayers:
+        if importLayer not in availableLayers:
             raise Exception(
                 "Only layers level {0} are available.".format(availableLayers))
         self.importLayer = importLayer
@@ -484,7 +481,7 @@ class PCAPImporter(object):
         self.messages = SortedTypedList(AbstractMessage)
         for filePath in filePathList:
             self.__readMessagesFromFile(filePath, bpfFilter, nbPackets)
-        
+
         # if requested, we merge consecutive messages that share same source and destination
         if mergePacketsInFlow:
             mergedMessages = SortedTypedList(AbstractMessage)
@@ -496,7 +493,7 @@ class PCAPImporter(object):
                     mergedMessages.add(message)
                     previousMessage = message
             self.messages = mergedMessages
-            
+
         return self.messages
 
     @staticmethod

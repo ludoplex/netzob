@@ -262,17 +262,23 @@ class Timestamp(AbstractType):
         # Validate epoch
         specific_epochs = [Epoch.WINDOWS, Epoch.MUMPS, Epoch.VMS]
         if epoch in specific_epochs and unitSize == UnitSize.SIZE_32:
-            raise ValueError("A Timestamp epoch in the following list ({}) should have its unitSize set to UnitSize.SIZE_64".format(specific_epochs))
+            raise ValueError(
+                f"A Timestamp epoch in the following list ({specific_epochs}) should have its unitSize set to UnitSize.SIZE_64"
+            )
 
         # Validate unity
         specific_unities = [Unity.DECISECOND, Unity.CENTISECOND, Unity.MILLISECOND, Unity.MICROSECOND, Unity.NANOSECOND]
         if unity in specific_unities and unitSize == UnitSize.SIZE_32:
-            raise ValueError("A Timestamp unity in the following list ({}) should have its unitSize set to UnitSize.SIZE_64".format(specific_unities))
+            raise ValueError(
+                f"A Timestamp unity in the following list ({specific_unities}) should have its unitSize set to UnitSize.SIZE_64"
+            )
 
         # Validate uniSize
         valid_unitSizes = [UnitSize.SIZE_32, UnitSize.SIZE_64]
         if unitSize not in valid_unitSizes:
-            raise ValueError("unitSize parameter should be one of '{}', but not '{}'".format(valid_unitSizes, str(unitSize)))
+            raise ValueError(
+                f"unitSize parameter should be one of '{valid_unitSizes}', but not '{str(unitSize)}'"
+            )
 
         if value is not None and not isinstance(value, bitarray):
             # converts the specified value in bitarray
@@ -319,7 +325,7 @@ class Timestamp(AbstractType):
         if self.value is not None:
             return "{}({})".format(self.typeName, int.from_bytes(self.value.tobytes(), byteorder='big'))
         else:
-            return "{}()".format(self.typeName)
+            return f"{self.typeName}()"
 
     @public_api
     def count(self):
@@ -334,10 +340,7 @@ class Timestamp(AbstractType):
 
         """
 
-        if self.value is not None:
-            return 1
-        else:
-            return (1 << self.unitSize.value)
+        return 1 if self.value is not None else (1 << self.unitSize.value)
 
     def canParse(self,
                  data,
@@ -443,17 +446,15 @@ class Timestamp(AbstractType):
         # apply the unity
         result_unity = int(result_sec * self.unity.value)
 
-        # convert to bitarray
-        final = TypeConverter.convert(
+        return TypeConverter.convert(
             result_unity,
             Integer,
             BitArray,
             src_unitSize=self.unitSize,
             src_endianness=self.endianness,
             src_sign=self.sign,
-            dst_endianness=self.endianness)
-
-        return final
+            dst_endianness=self.endianness,
+        )
 
     @staticmethod
     def decode(data,

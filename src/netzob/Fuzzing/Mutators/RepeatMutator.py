@@ -211,15 +211,16 @@ class RepeatMutator(DomainMutator):
             mutator, mutator_default_parameters = v
             copy_mappingTypesMutators[k] = mutator_default_parameters
 
-        m = RepeatMutator(self.domain,
-                          mode=self.mode,
-                          generator=self.generator,
-                          seed=self.seed,
-                          counterMax=self.counterMax,
-                          mutateChild=self.mutateChild,
-                          mappingTypesMutators=copy_mappingTypesMutators,
-                          lengthBitSize=self.lengthBitSize)
-        return m
+        return RepeatMutator(
+            self.domain,
+            mode=self.mode,
+            generator=self.generator,
+            seed=self.seed,
+            counterMax=self.counterMax,
+            mutateChild=self.mutateChild,
+            mappingTypesMutators=copy_mappingTypesMutators,
+            lengthBitSize=self.lengthBitSize,
+        )
 
     def count(self, preset=None):
         r"""
@@ -243,25 +244,20 @@ class RepeatMutator(DomainMutator):
 
         if self.mode == FuzzingMode.FIXED:
             return AbstractType.MAXIMUM_POSSIBLE_VALUES
+        # Handle max repeat
+        if isinstance(self.domain.nbRepeat, tuple):
+            max_repeat = self.domain.nbRepeat[1]
+        elif isinstance(self.domain.nbRepeat, int):
+            max_repeat = self.domain.nbRepeat
         else:
+            max_repeat = Repeat.MAX_REPEAT
 
-            # Handle max repeat
-            if isinstance(self.domain.nbRepeat, tuple):
-                max_repeat = self.domain.nbRepeat[1]
-            elif isinstance(self.domain.nbRepeat, int):
-                max_repeat = self.domain.nbRepeat
-            else:
-                max_repeat = Repeat.MAX_REPEAT
+        # Handle count() of children
+        count = self.domain.children[0].count(preset=preset)
 
-            # Handle count() of children
-            count = self.domain.children[0].count(preset=preset)
-
-            # Result
-            count = count ** max_repeat
-            if count > AbstractType.MAXIMUM_POSSIBLE_VALUES:
-                return AbstractType.MAXIMUM_POSSIBLE_VALUES
-            else:
-                return count
+        # Result
+        count = count ** max_repeat
+        return min(count, AbstractType.MAXIMUM_POSSIBLE_VALUES)
 
     @property
     def mutateChild(self):
@@ -313,14 +309,11 @@ class RepeatMutator(DomainMutator):
 
         if self.mode == FuzzingMode.FIXED:
             value = next(self.generator)
+        elif self._lengthGenerator is None:
+            raise Exception("Length generator not initialized")
+
         else:
-
-            # Generate length
-            if self._lengthGenerator is not None:
-                value = next(self._lengthGenerator)
-            else:
-                raise Exception("Length generator not initialized")
-
+            value = next(self._lengthGenerator)
         return value
 
 

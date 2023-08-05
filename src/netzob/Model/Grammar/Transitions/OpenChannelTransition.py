@@ -163,14 +163,16 @@ class OpenChannelTransition(AbstractTransition):
             actor.abstractionLayer.openChannel()
         except Exception as e:
             self._logger.debug(
-                "[actor='{}'] An error occured which prevented the good execution of the open channel transition".format(actor.name)
+                f"[actor='{actor.name}'] An error occured which prevented the good execution of the open channel transition"
             )
             self.active = False
             raise e
 
         self.active = False
 
-        actor.visit_log.append("  [+]   Transition '{}' lead to state '{}'".format(self.name, str(self.endState)))
+        actor.visit_log.append(
+            f"  [+]   Transition '{self.name}' lead to state '{str(self.endState)}'"
+        )
         return self.endState
 
 

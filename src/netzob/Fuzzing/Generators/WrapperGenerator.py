@@ -157,10 +157,7 @@ class WrapperGenerator(Generator):
 
     @bitsize.setter  # type: ignore
     def bitsize(self, bitsize):
-        if bitsize is None:
-            self._bitsize = 16
-        else:
-            self._bitsize = bitsize
+        self._bitsize = 16 if bitsize is None else bitsize
 
     @property
     def signed(self):

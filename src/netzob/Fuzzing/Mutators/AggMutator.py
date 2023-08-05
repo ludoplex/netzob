@@ -168,14 +168,15 @@ class AggMutator(DomainMutator):
             mutator, mutator_default_parameters = v
             copy_mappingTypesMutators[k] = mutator_default_parameters
 
-        m = AggMutator(self.domain,
-                       mode=self.mode,
-                       generator=self.generator,
-                       seed=self.seed,
-                       counterMax=self.counterMax,
-                       mutateChild=self.mutateChild,
-                       mappingTypesMutators=copy_mappingTypesMutators)
-        return m
+        return AggMutator(
+            self.domain,
+            mode=self.mode,
+            generator=self.generator,
+            seed=self.seed,
+            counterMax=self.counterMax,
+            mutateChild=self.mutateChild,
+            mappingTypesMutators=copy_mappingTypesMutators,
+        )
 
     def count(self, preset=None):
         r"""
@@ -249,8 +250,7 @@ class AggMutator(DomainMutator):
             super().generate()
 
         if self.mode == FuzzingMode.FIXED:
-            value = next(self.generator)
-            return value
+            return next(self.generator)
 
 
 def _test_fixed():

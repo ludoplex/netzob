@@ -117,9 +117,7 @@ class FindKeyFields(object):
         for result in results:
             tmpClusters = Format.clusterByKeyField(field, result["keyField"])
             result["nbClusters"] = len(tmpClusters)
-            distrib = []  # Compute clusters distribution
-            for cluster in list(tmpClusters.values()):
-                distrib.append(len(cluster.messages))
+            distrib = [len(cluster.messages) for cluster in list(tmpClusters.values())]
             result["distribution"] = distrib
 
         return results

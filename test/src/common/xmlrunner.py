@@ -93,7 +93,7 @@ class _TestInfo(object):
 
 
 def _clsname(cls):
-    return cls.__module__ + "." + cls.__name__
+    return f"{cls.__module__}.{cls.__name__}"
 
 
 class _XMLTestResult(unittest.TestResult):
@@ -180,7 +180,7 @@ class XMLTestRunner(object):
     def run(self, test):
         """Run the given test case or test suite."""
         class_ = test.__class__
-        class_name = class_.__module__ + "." + class_.__name__
+        class_name = f"{class_.__module__}.{class_.__name__}"
         if self._stream is None:
             filename = "TEST-{0}.xml".format(class_name)
             stream = open(os.path.join(self._path, filename), "w")

@@ -138,15 +138,8 @@ class DeterministGenerator(Generator):
 
     def _createValues(self, signed):
         self._currentPos = 0
-        signedShift = 0
-
-        if not signed:
-            # on 8 bits : -1 = 0b11111111 = 255 = -1 + 2^8
-            signedShift = 2**self.bitsize
-
-        self._values = list()
-        self._values.append(self.maxValue)  # Q
-        self._values.append(self.minValue)  # P
+        signedShift = 2**self.bitsize if not signed else 0
+        self._values = [self.maxValue, self.minValue]
         if (self.minValue - 1) & ((2**self.bitsize) - 1) == self.minValue - 1:
             self._values.append(self.minValue - 1)  # P-1
         self._values.append(self.maxValue - 1)  # Q-1
@@ -154,9 +147,8 @@ class DeterministGenerator(Generator):
         if signed:
             if (self.maxValue + 1) & (2**(self.bitsize - 1) - 1) == self.maxValue + 1:
                 self._values.append(self.maxValue + 1)  # Q+1
-        else:
-            if (self.maxValue + 1) & ((2**self.bitsize) - 1) == self.maxValue + 1:
-                self._values.append(self.maxValue + 1)  # Q+1
+        elif (self.maxValue + 1) & ((2**self.bitsize) - 1) == self.maxValue + 1:
+            self._values.append(self.maxValue + 1)  # Q+1
         self._values.append(0)  # 0
         self._values.append(-1 + signedShift)  # -1
         self._values.append(1)  # 1
@@ -195,10 +187,7 @@ class DeterministGenerator(Generator):
         if len(self._values) == 0:
             raise ValueError("Value list is empty.")
 
-        if pos < len(self._values):
-            return self._values(pos)
-        else:
-            return None
+        return self._values(pos) if pos < len(self._values) else None
 
     ## Properties
 
@@ -211,8 +200,7 @@ class DeterministGenerator(Generator):
         if minValue is None:
             raise ValueError("minValue should not be None")
         if not isinstance(minValue, int):
-            raise ValueError("minValue should be an integer, not: '{}'"
-                             .format(type(minValue)))
+            raise ValueError(f"minValue should be an integer, not: '{type(minValue)}'")
         self._minValue = minValue
 
     @property
@@ -224,8 +212,7 @@ class DeterministGenerator(Generator):
         if maxValue is None:
             raise ValueError("maxValue should not be None")
         if not isinstance(maxValue, int):
-            raise ValueError("maxValue should be an integer, not: '{}'"
-                             .format(type(maxValue)))
+            raise ValueError(f"maxValue should be an integer, not: '{type(maxValue)}'")
         self._maxValue = maxValue
 
     @property
@@ -237,6 +224,5 @@ class DeterministGenerator(Generator):
         if bitsize is None:
             raise ValueError("bitsize should not be None")
         if not isinstance(bitsize, int):
-            raise ValueError("bitsize should be an int, not: '{}'"
-                             .format(type(bitsize)))
+            raise ValueError(f"bitsize should be an int, not: '{type(bitsize)}'")
         self._bitsize = bitsize

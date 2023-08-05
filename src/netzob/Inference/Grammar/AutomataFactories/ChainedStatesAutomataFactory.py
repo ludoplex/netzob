@@ -61,7 +61,7 @@ class ChainedStatesAutomataFactory(object):
         # So we consider it as the initiator of the session.
         sStart = State(name="Start state")
         idx_states = 1
-        sA = State(name="State " + str(idx_states))
+        sA = State(name=f"State {idx_states}")
         sB = None
         sEnd = State(name="End state")
         openTransition = OpenChannelTransition(
@@ -72,16 +72,15 @@ class ChainedStatesAutomataFactory(object):
         while True:
             try:
                 (source, destination, symbol) = next(it)
-                if source == client:
-                    if symbol is not None:
+                if symbol is not None:
+                    if source == client:
                         inputSymbol = symbol
                         outputSymbols = None
-                else:
-                    if symbol is not None:
+                    else:
                         outputSymbols = [symbol]
                 if inputSymbol is not None and outputSymbols is not None:
                     idx_states += 1
-                    sB = State(name="State " + str(idx_states))
+                    sB = State(name=f"State {idx_states}")
                     mainTransition = Transition(
                         startState=sA,
                         endState=sB,

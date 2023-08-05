@@ -57,28 +57,64 @@ class test_UPGMA(unittest.TestCase):
 
         # group1
         originalSymbol1 = Symbol(str(uuid.uuid4()), "TestSymbol", None)
-        message1 = RawMessage(str(uuid.uuid4()), str(time.time()), TypeConvertor.stringToNetzobRaw("bonjour " + self.generateRandomString(20, 30) + " comment vas-tu ?"))
+        message1 = RawMessage(
+            str(uuid.uuid4()),
+            str(time.time()),
+            TypeConvertor.stringToNetzobRaw(
+                f"bonjour {self.generateRandomString(20, 30)} comment vas-tu ?"
+            ),
+        )
         originalSymbol1.addMessage(message1)
 
         originalSymbol2 = Symbol(str(uuid.uuid4()), "TestSymbol2", None)
-        message2 = RawMessage(str(uuid.uuid4()), str(time.time()), TypeConvertor.stringToNetzobRaw("bonjour " + self.generateRandomString(20, 30) + " comment vas-tu ?"))
+        message2 = RawMessage(
+            str(uuid.uuid4()),
+            str(time.time()),
+            TypeConvertor.stringToNetzobRaw(
+                f"bonjour {self.generateRandomString(20, 30)} comment vas-tu ?"
+            ),
+        )
         originalSymbol2.addMessage(message2)
 
         originalSymbol3 = Symbol(str(uuid.uuid4()), "TestSymbol3", None)
-        message3 = RawMessage(str(uuid.uuid4()), str(time.time()), TypeConvertor.stringToNetzobRaw("bonjour " + self.generateRandomString(20, 30) + " comment vas-tu ?"))
+        message3 = RawMessage(
+            str(uuid.uuid4()),
+            str(time.time()),
+            TypeConvertor.stringToNetzobRaw(
+                f"bonjour {self.generateRandomString(20, 30)} comment vas-tu ?"
+            ),
+        )
         originalSymbol3.addMessage(message3)
 
         # group2
         originalSymbol4 = Symbol(str(uuid.uuid4()), "TestSymbol4", None)
-        message4 = RawMessage(str(uuid.uuid4()), str(time.time()), TypeConvertor.stringToNetzobRaw("salut à toi " + self.generateRandomString(10, 15) + " what's up ?"))
+        message4 = RawMessage(
+            str(uuid.uuid4()),
+            str(time.time()),
+            TypeConvertor.stringToNetzobRaw(
+                f"salut à toi {self.generateRandomString(10, 15)} what's up ?"
+            ),
+        )
         originalSymbol4.addMessage(message4)
 
         originalSymbol5 = Symbol(str(uuid.uuid4()), "TestSymbol5", None)
-        message5 = RawMessage(str(uuid.uuid4()), str(time.time()), TypeConvertor.stringToNetzobRaw("salut à toi " + self.generateRandomString(10, 15) + " what's up ?"))
+        message5 = RawMessage(
+            str(uuid.uuid4()),
+            str(time.time()),
+            TypeConvertor.stringToNetzobRaw(
+                f"salut à toi {self.generateRandomString(10, 15)} what's up ?"
+            ),
+        )
         originalSymbol5.addMessage(message5)
 
         originalSymbol6 = Symbol(str(uuid.uuid4()), "TestSymbol6", None)
-        message6 = RawMessage(str(uuid.uuid4()), str(time.time()), TypeConvertor.stringToNetzobRaw("salut à toi " + self.generateRandomString(10, 15) + " what's up ?"))
+        message6 = RawMessage(
+            str(uuid.uuid4()),
+            str(time.time()),
+            TypeConvertor.stringToNetzobRaw(
+                f"salut à toi {self.generateRandomString(10, 15)} what's up ?"
+            ),
+        )
         originalSymbol6.addMessage(message6)
 
         symbols = [originalSymbol1, originalSymbol2, originalSymbol3, originalSymbol4, originalSymbol5, originalSymbol6]
@@ -88,9 +124,9 @@ class test_UPGMA(unittest.TestCase):
         result = clusteringSolution.executeClustering()
 
         for symbol in result:
-            print("Symbol: " + str(symbol.getName()))
+            print(f"Symbol: {str(symbol.getName())}")
             for m in symbol.getMessages():
-                print(" + " + str(m.getStringData()))
+                print(f" + {str(m.getStringData())}")
 
     def test_executingClusteringWithOrphanReduction(self):
 
@@ -98,28 +134,64 @@ class test_UPGMA(unittest.TestCase):
 
         # group1
         originalSymbol1 = Symbol(str(uuid.uuid4()), "TestSymbol", None)
-        message1 = RawMessage(str(uuid.uuid4()), str(time.time()), TypeConvertor.stringToNetzobRaw("bonjour " + self.generateRandomString(200, 1000)))
+        message1 = RawMessage(
+            str(uuid.uuid4()),
+            str(time.time()),
+            TypeConvertor.stringToNetzobRaw(
+                f"bonjour {self.generateRandomString(200, 1000)}"
+            ),
+        )
         originalSymbol1.addMessage(message1)
 
         originalSymbol2 = Symbol(str(uuid.uuid4()), "TestSymbol2", None)
-        message2 = RawMessage(str(uuid.uuid4()), str(time.time()), TypeConvertor.stringToNetzobRaw("bonjour " + self.generateRandomString(200, 1000)))
+        message2 = RawMessage(
+            str(uuid.uuid4()),
+            str(time.time()),
+            TypeConvertor.stringToNetzobRaw(
+                f"bonjour {self.generateRandomString(200, 1000)}"
+            ),
+        )
         originalSymbol2.addMessage(message2)
 
         originalSymbol3 = Symbol(str(uuid.uuid4()), "TestSymbol3", None)
-        message3 = RawMessage(str(uuid.uuid4()), str(time.time()), TypeConvertor.stringToNetzobRaw("bonjour " + self.generateRandomString(200, 1000)))
+        message3 = RawMessage(
+            str(uuid.uuid4()),
+            str(time.time()),
+            TypeConvertor.stringToNetzobRaw(
+                f"bonjour {self.generateRandomString(200, 1000)}"
+            ),
+        )
         originalSymbol3.addMessage(message3)
 
         # group2
         originalSymbol4 = Symbol(str(uuid.uuid4()), "TestSymbol4", None)
-        message4 = RawMessage(str(uuid.uuid4()), str(time.time()), TypeConvertor.stringToNetzobRaw("salut " + self.generateRandomString(200, 1000)))
+        message4 = RawMessage(
+            str(uuid.uuid4()),
+            str(time.time()),
+            TypeConvertor.stringToNetzobRaw(
+                f"salut {self.generateRandomString(200, 1000)}"
+            ),
+        )
         originalSymbol4.addMessage(message4)
 
         originalSymbol5 = Symbol(str(uuid.uuid4()), "TestSymbol5", None)
-        message5 = RawMessage(str(uuid.uuid4()), str(time.time()), TypeConvertor.stringToNetzobRaw("salut " + self.generateRandomString(200, 1000)))
+        message5 = RawMessage(
+            str(uuid.uuid4()),
+            str(time.time()),
+            TypeConvertor.stringToNetzobRaw(
+                f"salut {self.generateRandomString(200, 1000)}"
+            ),
+        )
         originalSymbol5.addMessage(message5)
 
         originalSymbol6 = Symbol(str(uuid.uuid4()), "TestSymbol6", None)
-        message6 = RawMessage(str(uuid.uuid4()), str(time.time()), TypeConvertor.stringToNetzobRaw("salut " + self.generateRandomString(200, 1000)))
+        message6 = RawMessage(
+            str(uuid.uuid4()),
+            str(time.time()),
+            TypeConvertor.stringToNetzobRaw(
+                f"salut {self.generateRandomString(200, 1000)}"
+            ),
+        )
         originalSymbol6.addMessage(message6)
 
         symbols = [originalSymbol1, originalSymbol2, originalSymbol3, originalSymbol4, originalSymbol5, originalSymbol6]
@@ -132,14 +204,14 @@ class test_UPGMA(unittest.TestCase):
         if (len(resultAfterOrphan) < len(resultBeforeOrphan)):
             print("Before Orphan Reduction: ")
             for symbol in resultBeforeOrphan:
-                print("Symbol: " + str(symbol.getName()))
+                print(f"Symbol: {str(symbol.getName())}")
                 for m in symbol.getMessages():
-                    print(" + " + str(m.getStringData()))
+                    print(f" + {str(m.getStringData())}")
 
             print("After Orphan Reduction: ")
             for symbol in resultAfterOrphan:
-                print("Symbol: " + str(symbol.getName()))
+                print(f"Symbol: {str(symbol.getName())}")
                 for m in symbol.getMessages():
-                    print(" + " + str(m.getStringData()))
+                    print(f" + {str(m.getStringData())}")
 
         self.assertGreaterEqual(len(resultBeforeOrphan), len(resultAfterOrphan))

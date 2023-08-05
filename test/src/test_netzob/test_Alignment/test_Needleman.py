@@ -60,8 +60,8 @@ class test_Needleman(NetzobTestCase):
         result = ""
         nb = random.randint(min_len, max_len)
 
-        for i in range(0, nb):
-            val = str(hex(random.randint(0, 255)))[2:]
+        for _ in range(0, nb):
+            val = hex(random.randint(0, 255))[2:]
             result += "0" * (len(val) % 2) + val
         return result
 
@@ -81,8 +81,16 @@ class test_Needleman(NetzobTestCase):
         firstname2 = "luc"
         email2 = "thomas@kotmail.com"
 
-        msg1 = RawMessage(uuid.uuid4(), None, TypeConvertor.stringToNetzobRaw("6" + firstname1 + "GAHFSHQS" + email1))
-        msg2 = RawMessage(uuid.uuid4(), None, TypeConvertor.stringToNetzobRaw("3" + firstname2 + "CVSDHISD" + email2))
+        msg1 = RawMessage(
+            uuid.uuid4(),
+            None,
+            TypeConvertor.stringToNetzobRaw(f"6{firstname1}GAHFSHQS{email1}"),
+        )
+        msg2 = RawMessage(
+            uuid.uuid4(),
+            None,
+            TypeConvertor.stringToNetzobRaw(f"3{firstname2}CVSDHISD{email2}"),
+        )
 
         project = Project(uuid.uuid4(), "Experiment", datetime.now(), "")
         nwEngine = NeedlemanAndWunsch(8, project, False, None)
@@ -128,7 +136,7 @@ class test_Needleman(NetzobTestCase):
         nbMessage = 500
         usernames = []
         emails = []
-        for iMessage in range(0, nbMessage):
+        for _ in range(0, nbMessage):
             str_username = self.generateRandomString(4, 10)
             username = TypeConvertor.stringToNetzobRaw(str_username)
             usernames.append(str_username)

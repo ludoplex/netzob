@@ -91,6 +91,5 @@ class NetzobSessionControllerFactory(object):
         try:
             return NetzobIPythonShellController()
         except Exception as e:
-            self._logger.warning(
-                "Cannot initialize IPython shell: {}".format(e))
+            self._logger.warning(f"Cannot initialize IPython shell: {e}")
         return NetzobInteractiveSessionController()

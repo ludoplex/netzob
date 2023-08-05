@@ -72,12 +72,16 @@ class AbstractVariableLeaf(AbstractVariable):
 
     def count(self, preset=None):
         from netzob.Fuzzing.Mutators.DomainMutator import FuzzingMode
-        if preset is not None and preset.get(self) is not None and preset.get(self).mode in [FuzzingMode.GENERATE, FuzzingMode.FIXED]:
-            # Retrieve the mutator
-            mutator = preset.get(self)
-            return mutator.count()
-        else:
+        if (
+            preset is None
+            or preset.get(self) is None
+            or preset.get(self).mode
+            not in [FuzzingMode.GENERATE, FuzzingMode.FIXED]
+        ):
             return self.dataType.count()
+        # Retrieve the mutator
+        mutator = preset.get(self)
+        return mutator.count()
 
     def parse(self, parsingPath, acceptCallBack=True, carnivorous=False, triggered=False):
         """@toto TO BE DOCUMENTED"""
@@ -88,7 +92,7 @@ class AbstractVariableLeaf(AbstractVariable):
 
         try:
             if self.isDefined(parsingPath):
-                if self.scope == Scope.CONSTANT or self.scope == Scope.SESSION:
+                if self.scope in [Scope.CONSTANT, Scope.SESSION]:
                     return self.valueCMP(
                         parsingPath, acceptCallBack, carnivorous=carnivorous, triggered=triggered)
                 elif self.scope == Scope.MESSAGE:
@@ -97,18 +101,17 @@ class AbstractVariableLeaf(AbstractVariable):
                 elif self.scope == Scope.NONE:
                     return self.domainCMP(
                         parsingPath, acceptCallBack, carnivorous=carnivorous, triggered=triggered)
-            else:
-                if self.scope == Scope.CONSTANT:
-                    self._logger.debug(
-                        "Cannot parse '{0}' as scope is CONSTANT and no value is available.".
-                        format(self))
-                    return []
-                elif self.scope == Scope.MESSAGE or self.scope == Scope.SESSION:
-                    return self.learn(
-                        parsingPath, acceptCallBack, carnivorous=carnivorous, triggered=triggered)
-                elif self.scope == Scope.NONE:
-                    return self.domainCMP(
-                        parsingPath, acceptCallBack, carnivorous=carnivorous, triggered=triggered)
+            elif self.scope == Scope.CONSTANT:
+                self._logger.debug(
+                    "Cannot parse '{0}' as scope is CONSTANT and no value is available.".
+                    format(self))
+                return []
+            elif self.scope in [Scope.MESSAGE, Scope.SESSION]:
+                return self.learn(
+                    parsingPath, acceptCallBack, carnivorous=carnivorous, triggered=triggered)
+            elif self.scope == Scope.NONE:
+                return self.domainCMP(
+                    parsingPath, acceptCallBack, carnivorous=carnivorous, triggered=triggered)
         except ParsingException:
             self._logger.info("Error in parsing of variable")
             return []
@@ -182,7 +185,7 @@ class AbstractVariableLeaf(AbstractVariable):
                 "Cannot specialize if the variable has no assigned Scope.")
 
         if self.isDefined(parsingPath):
-            if self.scope == Scope.CONSTANT or self.scope == Scope.SESSION:
+            if self.scope in [Scope.CONSTANT, Scope.SESSION]:
                 newParsingPaths = self.use(parsingPath, acceptCallBack, preset=preset, triggered=triggered)
             elif self.scope == Scope.MESSAGE:
                 newParsingPaths = self.regenerateAndMemorize(parsingPath, acceptCallBack, preset=preset, triggered=triggered)
@@ -194,7 +197,7 @@ class AbstractVariableLeaf(AbstractVariable):
                     "Cannot specialize '{0}' as scope is CONSTANT and no value is available.".
                     format(self))
                 newParsingPaths = iter(())
-            elif self.scope == Scope.MESSAGE or self.scope == Scope.SESSION:
+            elif self.scope in [Scope.MESSAGE, Scope.SESSION]:
                 newParsingPaths = self.regenerateAndMemorize(parsingPath, acceptCallBack, preset=preset, triggered=triggered)
             elif self.scope == Scope.NONE:
                 newParsingPaths = self.regenerate(parsingPath, acceptCallBack, preset=preset, triggered=triggered)
@@ -221,16 +224,15 @@ class AbstractVariableLeaf(AbstractVariable):
         """Returns a string which denotes
         the current field definition using a tree display"""
 
-        tab = ["     " for x in range(deepness - 1)]
+        tab = ["     " for _ in range(deepness - 1)]
         tab.append("|--   ")
         tab.append("{0}".format(self))
 
         # Add information regarding preset configuration
         if preset is not None and preset.get(self) is not None:
-            tmp_data = " ["
-            tmp_data += str(preset.get(self).mode)
+            tmp_data = f" [{str(preset.get(self).mode)}"
             try:
-                tmp_data += " ({})".format(preset[self])
+                tmp_data += f" ({preset[self]})"
             except Exception as e:
                 pass
             tmp_data += "]"

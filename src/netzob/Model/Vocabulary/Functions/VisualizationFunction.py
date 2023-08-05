@@ -56,7 +56,9 @@ class VisualizationFunction(object):
 
     @abc.abstractmethod
     def getTags(self):
-        self.log.error("The function class (" + self.getType() +
-                       ") doesn't define 'getTags' !")
-        raise NotImplementedError("The function class (" + self.getType() +
-                                  ") doesn't define 'getTags' !")
+        self.log.error(
+            f"The function class ({self.getType()}) doesn't define 'getTags' !"
+        )
+        raise NotImplementedError(
+            f"The function class ({self.getType()}) doesn't define 'getTags' !"
+        )

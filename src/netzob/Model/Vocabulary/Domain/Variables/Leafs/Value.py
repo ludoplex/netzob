@@ -244,11 +244,7 @@ class Value(AbstractRelationVariableLeaf):
     @public_api
     def __init__(self, target, name=None, operation=None):
 
-        if target is not None:
-            targets = [target]
-        else:
-            targets = []
-
+        targets = [target] if target is not None else []
         super(Value, self).__init__(
             self.__class__.__name__, targets=targets, name=name)
         self.operation = operation
@@ -332,11 +328,7 @@ class Value(AbstractRelationVariableLeaf):
                     if not isinstance(type(self.targets[0].dataType), BitArray):
                         target_type_aligned_octets = True
 
-                if target_type_aligned_octets is True:
-                    step = -8
-                else:
-                    step = -1  # In order to support a target that manipulates bitarays
-
+                step = -8 if target_type_aligned_octets else -1
                 for size in range(min(maxSizeDep, len(content)), minSizeDep - 1, step):
                     # we create a new parsing path and returns it
                     newParsingPath = parsingPath.copy()
@@ -344,7 +336,6 @@ class Value(AbstractRelationVariableLeaf):
                     self._addCallBacksOnUndefinedVariables(newParsingPath)
                     results.append(newParsingPath)
 
-        # If the expectedValue contains data
         else:
             self._logger.debug("Expected value to parse: {0}".format(expectedValue.tobytes()))
             if content[:len(expectedValue)] == expectedValue:
@@ -366,45 +357,40 @@ class Value(AbstractRelationVariableLeaf):
         return self.valueCMP(parsingPath, acceptCallBack)
 
     def computeExpectedValue(self, parsingPath, preset=None):
-        self._logger.debug("Compute expected value for Value field '{}'".format(self.field))
+        self._logger.debug(f"Compute expected value for Value field '{self.field}'")
 
         # Check target variable consistency
         target_data = None
-        if len(self.targets) > 0:
-            if parsingPath.isVariableInaccessible(self.targets[0]):
-                error_message = "The following variable is inaccessible: '{}' for field '{}'. This may be because a parent field or variable is preset.".format(self.targets[0], self.targets[0].field)
-                self._logger.debug(error_message)
-                raise InaccessibleVariableException(error_message)
-
-            # Check is target is part of the current symbol or not
-            if self.is_same_symbol(self.targets[0]):
-                if parsingPath.hasData(self.targets[0]):
-                    target_data = parsingPath.getData(self.targets[0])
-            else:
-                if parsingPath.hasDataInMemory(self.targets[0]):
-                    target_data = parsingPath.getDataInMemory(self.targets[0])
-        else:
+        if len(self.targets) <= 0:
             raise Exception("No dependency field specified.")
 
+        if parsingPath.isVariableInaccessible(self.targets[0]):
+            error_message = f"The following variable is inaccessible: '{self.targets[0]}' for field '{self.targets[0].field}'. This may be because a parent field or variable is preset."
+            self._logger.debug(error_message)
+            raise InaccessibleVariableException(error_message)
+
+            # Check is target is part of the current symbol or not
+        if self.is_same_symbol(self.targets[0]):
+            if parsingPath.hasData(self.targets[0]):
+                target_data = parsingPath.getData(self.targets[0])
+        elif parsingPath.hasDataInMemory(self.targets[0]):
+            target_data = parsingPath.getDataInMemory(self.targets[0])
         if target_data is None:
             # Check targets consistency
             for target in self.targets:
                 Value.check_target_consistency(target)
 
             current_target = self.targets[0]
-            error_message = "The following variable has no value: '{}' for field '{}'".format(current_target, current_target.field)
+            error_message = f"The following variable has no value: '{current_target}' for field '{current_target.field}'"
             self._logger.debug(error_message)
             raise RelationDependencyException(error_message, current_target)
 
         # Check if a callback operation is defined
-        if self.__operation is None:
-            self._logger.debug("Computed value for {}: '{}'".format(self, target_data.tobytes()))
-            return target_data
-        else:
+        if self.__operation is not None:
             self._logger.debug("Use callback to compute expected value")
             target_data = self.__operation(target_data, parsingPath, self)
-            self._logger.debug("Computed value for {}: '{}'".format(self, target_data.tobytes()))
-            return target_data
+        self._logger.debug(f"Computed value for {self}: '{target_data.tobytes()}'")
+        return target_data
 
     def __str__(self):
         """The str method."""

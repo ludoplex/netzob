@@ -134,11 +134,10 @@ class RawEthernetChannel(AbstractChannel):
     def read(self):
         """Read the next message on the communication channel.
         """
-        if self._socket is not None:
-            (data, _) = self._socket.recvfrom(65535)
-            return data
-        else:
+        if self._socket is None:
             raise Exception("socket is not available")
+        (data, _) = self._socket.recvfrom(65535)
+        return data
 
     @public_api
     def sendReceive(self, data):
@@ -148,16 +147,14 @@ class RawEthernetChannel(AbstractChannel):
         :param data: the data to write on the channel
         :type data: :class:`bytes`
         """
-        if self._socket is not None:
-
-            targetHW = data[0:6]
-            self.write(data)
-            while True:
-                (data, _) = self._socket.recvfrom(65535)
-                if data[6:12] == targetHW:
-                    return data
-        else:
+        if self._socket is None:
             raise Exception("socket is not available")
+        targetHW = data[:6]
+        self.write(data)
+        while True:
+            (data, _) = self._socket.recvfrom(65535)
+            if data[6:12] == targetHW:
+                return data
 
     def writePacket(self, data):
         """Write on the communication channel the specified data
@@ -174,7 +171,9 @@ class RawEthernetChannel(AbstractChannel):
                 data, (self.interface,
                        RawEthernetChannel.ETH_P_ALL))
         except OSError as e:
-            self._logger.warning("OSError durring socket.sendto(): '{}'. Trying a second time after sleeping 1s...".format(e))
+            self._logger.warning(
+                f"OSError durring socket.sendto(): '{e}'. Trying a second time after sleeping 1s..."
+            )
             time.sleep(1)
             len_data = self._socket.sendto(
                 data, (self.interface,
@@ -206,7 +205,9 @@ class RawEthernetChannel(AbstractChannel):
         if rate is not None:
             self._logger.info("Network rate limited to {:.2f} kBps ({} kbps) on {} interface".format(rate/1000, rate*8/1000, self.interface))
         self._rate = rate
-        self._logger.info("tc status on {} interface: {}".format(self.interface, NetUtils.get_rate(self.interface)))
+        self._logger.info(
+            f"tc status on {self.interface} interface: {NetUtils.get_rate(self.interface)}"
+        )
 
     @public_api
     def unset_rate(self):
@@ -215,8 +216,12 @@ class RawEthernetChannel(AbstractChannel):
         if self._rate is not None:
             NetUtils.set_rate(self.interface, None)
             self._rate = None
-            self._logger.info("Network rate limitation removed on {} interface".format(self.interface))
-        self._logger.info("tc status on {} interface: {}".format(self.interface, NetUtils.get_rate(self.interface)))
+            self._logger.info(
+                f"Network rate limitation removed on {self.interface} interface"
+            )
+        self._logger.info(
+            f"tc status on {self.interface} interface: {NetUtils.get_rate(self.interface)}"
+        )
 
 
 class RawEthernetChannelBuilder(ChannelBuilder):

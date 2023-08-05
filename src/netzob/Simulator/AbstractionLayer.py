@@ -293,14 +293,13 @@ class AbstractionLayer(object):
                 if t_delta > 1:
                     t_delta = 0
                     if rate is None:
-                        self._logger.debug("Current rate: {} ko/s, sent data: {} ko, nb seconds elapsed: {}".format(round((data_len / t_elapsed) / 1024, 2),
-                                                                                                                    round(data_len / 1024, 2),
-                                                                                                                    round(t_elapsed, 2)))
+                        self._logger.debug(
+                            f"Current rate: {round(data_len / t_elapsed / 1024, 2)} ko/s, sent data: {round(data_len / 1024, 2)} ko, nb seconds elapsed: {round(t_elapsed, 2)}"
+                        )
                     else:
-                        self._logger.debug("Rate rule: {} ko/s, current rate: {} ko/s, sent data: {} ko, nb seconds elapsed: {}".format(round(rate / 1024, 2),
-                                                                                                                                        round((data_len / t_elapsed) / 1024, 2),
-                                                                                                                                        round(data_len / 1024, 2),
-                                                                                                                                        round(t_elapsed, 2)))
+                        self._logger.debug(
+                            f"Rate rule: {round(rate / 1024, 2)} ko/s, current rate: {round(data_len / t_elapsed / 1024, 2)} ko/s, sent data: {round(data_len / 1024, 2)} ko, nb seconds elapsed: {round(t_elapsed, 2)}"
+                        )
         return (data, data_len, data_structure)
 
     def _writeSymbol(self, symbol, preset=None, cbk_action=None):
@@ -333,8 +332,12 @@ class AbstractionLayer(object):
         self.memory = self.__specializer.memory
         self.__parser.memory = self.memory
 
-        self._logger.debug("Writing the following data to the commnunication channel: '{}'".format(data))
-        self._logger.debug("Writing the following symbol to the commnunication channel: '{}'".format(symbol.name))
+        self._logger.debug(
+            f"Writing the following data to the commnunication channel: '{data}'"
+        )
+        self._logger.debug(
+            f"Writing the following symbol to the commnunication channel: '{symbol.name}'"
+        )
 
         try:
             data_len = self.channel.write(data)
@@ -342,7 +345,7 @@ class AbstractionLayer(object):
             self._logger.debug("Timeout on channel.write(...)")
             raise
         except Exception as e:
-            self._logger.debug("Exception on channel.write(...): '{}'".format(e))
+            self._logger.debug(f"Exception on channel.write(...): '{e}'")
             raise
 
         self.last_sent_symbol = symbol
@@ -350,7 +353,9 @@ class AbstractionLayer(object):
         self.last_sent_structure = data_structure
 
         for cbk in cbk_action:
-            self._logger.debug("[actor='{}'] A callback function is defined for the write symbol event".format(self.actor))
+            self._logger.debug(
+                f"[actor='{self.actor}'] A callback function is defined for the write symbol event"
+            )
             cbk(symbol, data, data_structure, Operation.SPECIALIZE, self.actor.current_state, self.actor.memory)
 
         return (data, data_len, data_structure)
@@ -376,7 +381,7 @@ class AbstractionLayer(object):
 
         self._logger.debug("Reading data from communication channel...")
         data = self.channel.read()
-        self._logger.debug("Received : {}".format(repr(data)))
+        self._logger.debug(f"Received : {repr(data)}")
 
         symbols = []
 
@@ -385,18 +390,17 @@ class AbstractionLayer(object):
             try:
                 symbols_and_data = self.__flow_parser.parseFlow(
                     RawMessage(data), self.symbols)
-                for (symbol, alignment) in symbols_and_data:
-                    symbols.append(symbol)
+                symbols.extend(symbol for symbol, alignment in symbols_and_data)
             except Exception as e:
                 self._logger.error(e)
 
-            if len(symbols) > 0:
+            if symbols:
                 self.memory = self.__flow_parser.memory
                 self.__specializer.memory = self.memory
         else:
             symbols.append(EmptySymbol())
 
-        if len(symbols) == 0 and len(data) > 0:
+        if not symbols and len(data) > 0:
             msg = RawMessage(data)
             symbols.append(UnknownSymbol(message=msg))
 
@@ -443,10 +447,10 @@ class AbstractionLayer(object):
             self._logger.debug("Timeout on channel.read()")
             raise
         except Exception as e:
-            self._logger.debug("Exception on channel.read(): '{}'".format(e))
+            self._logger.debug(f"Exception on channel.read(): '{e}'")
             raise
 
-        self._logger.debug("Received: {}".format(repr(data)))
+        self._logger.debug(f"Received: {repr(data)}")
 
         symbol = None
         data_structure = {}
@@ -471,18 +475,23 @@ class AbstractionLayer(object):
                 for i, field_value in enumerate(fields_value):
                     data_structure[aligned_data.headers[i]] = field_value
 
-        if symbol is None and len(data) > 0:
-            msg = RawMessage(data)
-            symbol = UnknownSymbol(message=msg)
-        elif symbol is None and len(data) == 0:
-            symbol = EmptySymbol()
+        if symbol is None:
+            if len(data) > 0:
+                msg = RawMessage(data)
+                symbol = UnknownSymbol(message=msg)
+            elif len(data) == 0:
+                symbol = EmptySymbol()
 
         self.last_received_symbol = symbol
         self.last_received_message = data
         self.last_received_structure = data_structure
 
-        self._logger.debug("Receiving the following data from the commnunication channel: '{}'".format(data))
-        self._logger.debug("Receiving the following symbol from the commnunication channel: '{}'".format(symbol.name))
+        self._logger.debug(
+            f"Receiving the following data from the commnunication channel: '{data}'"
+        )
+        self._logger.debug(
+            f"Receiving the following symbol from the commnunication channel: '{symbol.name}'"
+        )
 
         return (symbol, data, data_structure)
 
@@ -544,10 +553,7 @@ class AbstractionLayer(object):
 
     @property
     def memory(self):
-        if self.actor is not None:
-            return self.actor.memory
-        else:
-            return self.__memory
+        return self.actor.memory if self.actor is not None else self.__memory
 
     @memory.setter  # type: ignore
     def memory(self, memory):

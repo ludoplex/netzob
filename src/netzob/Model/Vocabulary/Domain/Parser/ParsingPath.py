@@ -67,29 +67,25 @@ class ParsingPath(GenericPath):
             dataAssignedToVariable=dataAssignedToVariable,
             variablesCallbacks=variablesCallbacks)
         self.originalDataToParse = dataToParse.copy()
-        if ok is None:
-            self.__ok = True
-        else:
-            self.__ok = ok
+        self.__ok = True if ok is None else ok
 
     def __str__(self):
-        return "ParsingPath ({}, ok={})".format(id(self), self.__ok)
+        return f"ParsingPath ({id(self)}, ok={self.__ok})"
 
     def copy(self):
-        dVariable = {}
-        for key, value in list(self._dataAssignedToVariable.items()):
-            dVariable[key] = value.copy()
+        dVariable = {
+            key: value.copy()
+            for key, value in list(self._dataAssignedToVariable.items())
+        }
+        fCall = list(self._variablesCallbacks)
 
-        fCall = [x for x in self._variablesCallbacks]
-
-        result = ParsingPath(
+        return ParsingPath(
             self.originalDataToParse,
             memory=self.memory,
             dataAssignedToVariable=dVariable,
             variablesCallbacks=fCall,
-            ok=self.ok)
-
-        return result
+            ok=self.ok,
+        )
 
     @property
     def ok(self):

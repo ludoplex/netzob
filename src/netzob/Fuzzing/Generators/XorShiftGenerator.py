@@ -142,7 +142,7 @@ class XorShiftGenerator(Generator):
         if seed == 0:
             raise ValueError("A seed=0 is not compatible with the generator XorShiftGenerator")
 
-        if not (minValue is None or maxValue is None):
+        if minValue is not None and maxValue is not None:
             if minValue > maxValue:
                 raise ValueError("maxValue must be greater than minValue")
 
@@ -195,7 +195,7 @@ class XorShiftGenerator(Generator):
             if self.nb_values == 1<<64:
                 self.nb_values_full = True
         else:
-            raise ValueError("Bitsize value '{}' not supported".format(self.bitsize))
+            raise ValueError(f"Bitsize value '{self.bitsize}' not supported")
 
     def __iter__(self):
         """This is the method to get the next value.
@@ -273,7 +273,7 @@ class XorShiftGenerator(Generator):
         if minValue is None:
             raise ValueError("minValue should not be None")
         if not isinstance(minValue, int):
-            raise ValueError("minValue should be an integer, not: '{}'".format(type(minValue)))
+            raise ValueError(f"minValue should be an integer, not: '{type(minValue)}'")
         self._minValue = minValue
 
     @property
@@ -285,7 +285,7 @@ class XorShiftGenerator(Generator):
         if maxValue is None:
             raise ValueError("maxValue should not be None")
         if not isinstance(maxValue, int):
-            raise ValueError("maxValue should be an integer, not: '{}'".format(type(maxValue)))
+            raise ValueError(f"maxValue should be an integer, not: '{type(maxValue)}'")
         self._maxValue = maxValue
 
     @property

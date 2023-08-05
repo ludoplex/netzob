@@ -162,12 +162,12 @@ class ClusterByKeyField(object):
                     newFieldDomain = TypeConverter.convert(newSymbolKeyValue,
                                                            keyFieldType, Raw)
                 else:
-                    newFieldDomain = set()
-                    for j in range(
-                            len(newSymbolsSplittedMessages[
-                                newSymbolKeyValue])):
-                        newFieldDomain.add(newSymbolsSplittedMessages[
-                            newSymbolKeyValue][j][i])
+                    newFieldDomain = {
+                        newSymbolsSplittedMessages[newSymbolKeyValue][j][i]
+                        for j in range(
+                            len(newSymbolsSplittedMessages[newSymbolKeyValue])
+                        )
+                    }
                     newFieldDomain = list(newFieldDomain)
                 newF = Field(name=f.name, domain=newFieldDomain)
                 newF.parent = newSymbol
@@ -187,12 +187,12 @@ class ClusterByKeyField(object):
                     newFieldDomain = TypeConverter.convert(newSymbolKeyValue,
                                                            keyFieldType, Raw)
                 else:
-                    newFieldDomain = set()
-                    for j in range(
-                            len(newSymbolsSplittedMessages[
-                                newSymbolKeyValue])):
-                        newFieldDomain.add(newSymbolsSplittedMessages[
-                            newSymbolKeyValue][j][i])
+                    newFieldDomain = {
+                        newSymbolsSplittedMessages[newSymbolKeyValue][j][i]
+                        for j in range(
+                            len(newSymbolsSplittedMessages[newSymbolKeyValue])
+                        )
+                    }
                     newFieldDomain = list(newFieldDomain)
                 newF = Field(name=f.name, domain=newFieldDomain)
                 newF.parent = newSymbol

@@ -70,5 +70,5 @@ class test_TypeIdentifier(NetzobTestCase):
         alphabet = list(map(chr, list(range(97, 123))))
         alpha = alphabet[random.randint(0, len(alphabet) - 1)]
         typeIdentifier = TypeIdentifier()
-        hexOfNumber = str(hex(ord(alpha)))[2:]
+        hexOfNumber = hex(ord(alpha))[2:]
         self.assertIn(Format.BINARY, typeIdentifier.getTypes(hexOfNumber))

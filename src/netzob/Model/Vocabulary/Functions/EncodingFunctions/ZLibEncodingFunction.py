@@ -112,12 +112,11 @@ class ZLibEncodingFunction(EncodingFunction):
         data_raw = TypeConverter.convert(data, BitArray, Raw)
 
         result = None
-        if self.compress_data:
-            result = zlib.compress(data_raw, self.compression_level)
-        else:
-            result = zlib.decompress(data_raw)
-            
-        return result
+        return (
+            zlib.compress(data_raw, self.compression_level)
+            if self.compress_data
+            else zlib.decompress(data_raw)
+        )
 
     def priority(self):
         """Returns the priority of the current encoding filter."""

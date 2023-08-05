@@ -163,10 +163,7 @@ class MessageParser(object):
     """
 
     def __init__(self, memory=None):
-        if memory is None:
-            self.memory = Memory()
-        else:
-            self.memory = memory
+        self.memory = Memory() if memory is None else memory
 
     @typeCheck(AbstractMessage, Symbol)
     def parseMessage(self, message, symbol):
@@ -209,12 +206,14 @@ class MessageParser(object):
         
         """
 
-        self._logger.debug("New parsing method executed on '{}'".format(bitArrayToParse.tobytes()))
+        self._logger.debug(
+            f"New parsing method executed on '{bitArrayToParse.tobytes()}'"
+        )
 
         # We normalize the variables
         for field in fields:
             if field.domain is not None and isinstance(field.domain, AbstractRelationVariableLeaf):
-                self._logger.debug("Normalize field targets for field '{}'".format(field.name))
+                self._logger.debug(f"Normalize field targets for field '{field.name}'")
                 field.domain.normalize_targets()
 
         # building a new parsing path
@@ -234,8 +233,8 @@ class MessageParser(object):
         has_result = False
         for parsingResult in parsingResults:
             if parsingResult.ok is False:
-                self._logger.debug("Parsing status: {}".format(parsingResult.ok))
-                msg = "The parsed data do not match with the field '{}'".format(field.name)
+                self._logger.debug(f"Parsing status: {parsingResult.ok}")
+                msg = f"The parsed data do not match with the field '{field.name}'"
                 self._logger.debug(msg)
                 continue
 
@@ -246,7 +245,7 @@ class MessageParser(object):
                     field_data = parsingResult.getData(field.domain)
                     result.append(field_data)
                 else:
-                    msg = "The parsed data do not match with the field '{}'".format(field.name)
+                    msg = f"The parsed data do not match with the field '{field.name}'"
                     self._logger.debug(msg)
                     field_data_missing = True
                     break
@@ -261,8 +260,8 @@ class MessageParser(object):
 
         if not has_result:
             raise InvalidParsingPathException(
-                "No parsing path returned while parsing '{}'".format(
-                    TypeConverter.convert(bitArrayToParse, BitArray, Raw)))
+                f"No parsing path returned while parsing '{TypeConverter.convert(bitArrayToParse, BitArray, Raw)}'"
+            )
 
     def _parseBitArrayWithField(self,
                                 parsingPath,
@@ -270,8 +269,8 @@ class MessageParser(object):
                                 i_current_field,
                                 must_consume_everything=True):
         self._logger.debug(
-            "_parseBitArrayWithField executed for field {} with path : {}".
-            format(fields[i_current_field], parsingPath))
+            f"_parseBitArrayWithField executed for field {fields[i_current_field]} with path : {parsingPath}"
+        )
         currentField = fields[i_current_field]
 
         carnivorous_parsing = (i_current_field == len(fields) - 1)
@@ -288,7 +287,7 @@ class MessageParser(object):
                 if newParsingPath.hasData(currentField.domain):
                     value_after_parsing = newParsingPath.getData(currentField.domain)
                 else:
-                    msg = "The parsed data do not match with the field '{}'".format(currentField.name)
+                    msg = f"The parsed data do not match with the field '{currentField.name}'"
                     self._logger.debug(msg)
                     raise InvalidParsingPathException(msg)
 
@@ -300,18 +299,14 @@ class MessageParser(object):
                     newParsingPath.assignData(
                         remainingValue, fields[i_current_field + 1].domain)
 
-                    if must_consume_everything is False:
-                        generator = self._parseBitArrayWithField(
-                            newParsingPath,
-                            fields,
-                            i_current_field + 1,
-                            must_consume_everything=False)
-                    else:
-                        generator = self._parseBitArrayWithField(
-                            newParsingPath, fields, i_current_field + 1)
-                    yield from generator
-
-                # When we are at the last field
+                    yield from self._parseBitArrayWithField(
+                        newParsingPath,
+                        fields,
+                        i_current_field + 1,
+                        must_consume_everything=False,
+                    ) if must_consume_everything is False else self._parseBitArrayWithField(
+                        newParsingPath, fields, i_current_field + 1
+                    )
                 elif not must_consume_everything and len(remainingValue) >= 0:
                     yield newParsingPath
                 elif len(remainingValue) == 0:
@@ -328,8 +323,8 @@ class MessageParser(object):
                         yield newParsingPath
                     else:
                         self._logger.debug("The content has not been entirely parsed")
-                        self._logger.debug("Content to parse: '{}'".format(parsingPath.originalDataToParse))
-                        self._logger.debug("Content parsed:   '{}'".format(final_parsing))
+                        self._logger.debug(f"Content to parse: '{parsingPath.originalDataToParse}'")
+                        self._logger.debug(f"Content parsed:   '{final_parsing}'")
 
             except InvalidParsingPathException:
                 pass

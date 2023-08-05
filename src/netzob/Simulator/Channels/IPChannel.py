@@ -150,15 +150,14 @@ class IPChannel(AbstractChannel):
     def read(self):
         """Read the next message on the communication channel.
         """
-        if self._socket is not None:
-            (data, _) = self._socket.recvfrom(65535)
-            # Remove IP header from received data
-            ipHeaderLen = (data[0] & 15) * 4  # (Bitwise AND 00001111) x 4bytes --> see RFC-791
-            if len(data) > ipHeaderLen:
-                data = data[ipHeaderLen:]
-            return data
-        else:
+        if self._socket is None:
             raise Exception("socket is not available")
+        (data, _) = self._socket.recvfrom(65535)
+        # Remove IP header from received data
+        ipHeaderLen = (data[0] & 15) * 4  # (Bitwise AND 00001111) x 4bytes --> see RFC-791
+        if len(data) > ipHeaderLen:
+            data = data[ipHeaderLen:]
+        return data
 
     def writePacket(self, data):
         """Write on the communication channel the specified data
@@ -172,7 +171,9 @@ class IPChannel(AbstractChannel):
         try:
             len_data = self._socket.sendto(data, (self.remoteIP, 0))
         except OSError as e:
-            self._logger.warning("OSError durring socket.sendto(): '{}'. Trying a second time after sleeping 1s...".format(e))
+            self._logger.warning(
+                f"OSError durring socket.sendto(): '{e}'. Trying a second time after sleeping 1s..."
+            )
             time.sleep(1)
             len_data = self._socket.sendto(data, (self.remoteIP, 0))
         return len_data
@@ -190,8 +191,7 @@ class IPChannel(AbstractChannel):
             raise Exception("socket is not available")
 
         usePorts = False
-        if self.upperProtocol == socket.IPPROTO_TCP or \
-           self.upperProtocol == socket.IPPROTO_UDP:
+        if self.upperProtocol in [socket.IPPROTO_TCP, socket.IPPROTO_UDP]:
             usePorts = True
             # get the ports from message to identify the good response
             #  (in TCP or UDP)
@@ -208,7 +208,7 @@ class IPChannel(AbstractChannel):
                 portDstRx = (dataReceived[2] * 256) + dataReceived[3]
 
                 if (portSrcTx == portDstRx) and \
-                   (portDstTx == portSrcRx):
+                       (portDstTx == portSrcRx):
                     break
             else:
                 # Any response is the good one
@@ -247,10 +247,7 @@ class IPChannel(AbstractChannel):
     @localIP.setter  # type: ignore
     @typeCheck(str)
     def localIP(self, localIP):
-        if localIP is not None:
-            self.__localIP = localIP
-        else:
-            self.__localIP = "0.0.0.0"
+        self.__localIP = localIP if localIP is not None else "0.0.0.0"
 
     @property
     def upperProtocol(self):
@@ -284,7 +281,9 @@ class IPChannel(AbstractChannel):
         if rate is not None:
             self._logger.info("Network rate limited to {:.2f} kBps ({} kbps) on {} interface".format(rate/1000, rate*8/1000, localInterface))
         self._rate = rate
-        self._logger.info("tc status on {} interface: {}".format(localInterface, NetUtils.get_rate(localInterface)))
+        self._logger.info(
+            f"tc status on {localInterface} interface: {NetUtils.get_rate(localInterface)}"
+        )
 
     @public_api
     def unset_rate(self):
@@ -294,8 +293,12 @@ class IPChannel(AbstractChannel):
         if self._rate is not None:
             NetUtils.set_rate(localInterface, None)
             self._rate = None
-            self._logger.info("Network rate limitation removed on {} interface".format(localInterface))
-        self._logger.info("tc status on {} interface: {}".format(localInterface, NetUtils.get_rate(localInterface)))
+            self._logger.info(
+                f"Network rate limitation removed on {localInterface} interface"
+            )
+        self._logger.info(
+            f"tc status on {localInterface} interface: {NetUtils.get_rate(localInterface)}"
+        )
 
 
 class IPChannelBuilder(ChannelBuilder):

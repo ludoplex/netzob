@@ -85,9 +85,7 @@ class GrammarInferer(threading.Thread):
         return self.hypotheticalAutomaton
 
     def getSubmitedQueries(self):
-        if self.learner is not None:
-            return self.learner.getSubmitedQueries()
-        return []
+        return self.learner.getSubmitedQueries() if self.learner is not None else []
 
     def stop(self):
         self.active = False
@@ -137,27 +135,26 @@ class GrammarInferer(threading.Thread):
             else:
                 self.log.info("A counter-example has been found")
                 for s in counterExample.getSymbols():
-                    self.log.info("symbol : " + str(s) + " => " + str(
-                        s.getID()))
+                    self.log.info(f"symbol : {str(s)} => {str(s.getID())}")
                 self.learner.addCounterExamples([counterExample])
 
         automaton = self.learner.getInferedAutomata()
-        self.log.info("The following automaton has been computed : " + str(
-            automaton.getDotCode()))
+        self.log.info(
+            f"The following automaton has been computed : {str(automaton.getDotCode())}"
+        )
 
         # Now we apply indeterminism
         i_session = 0
         self.vocabulary.getSessions()
-        for session in self.sessions:
-            self.log.info("Re-inject session (" + str(i_session) +
-                          ") in the automata")
+        for _ in self.sessions:
+            self.log.info(f"Re-inject session ({str(i_session)}) in the automata")
             self.applyMessagesOnAutomata(automaton, messages)
             i_session = i_session + 1
 
         endTime = time.time()
         self.log.info("The inferring process is finished !")
 
-        print("Elapsed time: {} msecs".format((endTime - startTime) * 1000))
+        print(f"Elapsed time: {(endTime - startTime) * 1000} msecs")
         self.inferedAutomaton = automaton
 
     def applyMessagesOnAutomata(self, automaton, messages):

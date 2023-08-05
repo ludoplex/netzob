@@ -92,9 +92,11 @@ class AbstractRelationVariableLeaf(AbstractVariableLeaf):
             dataType = Raw(nbBytes=1)
         elif isinstance(dataType, AbstractType):
             if dataType.value is not None:
-                raise Exception("Relation dataType should not have a constant value: '{}'.".format(dataType))
+                raise Exception(
+                    f"Relation dataType should not have a constant value: '{dataType}'."
+                )
         else:
-            raise Exception("Relation dataType has a wrong type: '{}'.".format(dataType))
+            raise Exception(f"Relation dataType has a wrong type: '{dataType}'.")
 
         # Call super
         super(AbstractRelationVariableLeaf, self).__init__(
@@ -126,9 +128,11 @@ class AbstractRelationVariableLeaf(AbstractVariableLeaf):
         elif isinstance(self.targets, AbstractField):
             leafFields = self.targets.getLeafFields()
             if len(leafFields) > 0:
-                for field in leafFields:
-                    if field.domain is not None:
-                        new_targets.append(field.domain)
+                new_targets.extend(
+                    field.domain
+                    for field in leafFields
+                    if field.domain is not None
+                )
             elif self.targets.domain is not None:
                 new_targets = [self.targets.domain]
 
@@ -141,9 +145,11 @@ class AbstractRelationVariableLeaf(AbstractVariableLeaf):
                 if isinstance(target, AbstractField):
                     leafFields = target.getLeafFields()
                     if len(leafFields) > 0:
-                        for field in leafFields:
-                            if field.domain is not None:
-                                new_targets.append(field.domain)
+                        new_targets.extend(
+                            field.domain
+                            for field in leafFields
+                            if field.domain is not None
+                        )
                     elif target.domain is not None:
                         new_targets.append(target.domain)
 
@@ -151,9 +157,13 @@ class AbstractRelationVariableLeaf(AbstractVariableLeaf):
                     new_targets.append(target)
 
                 else:
-                    raise Exception("Targeted object '{}' sould be a Field or Variable, not a '{}'".format(repr(target), type(target)))
+                    raise Exception(
+                        f"Targeted object '{repr(target)}' sould be a Field or Variable, not a '{type(target)}'"
+                    )
         else:
-            raise Exception("Targeted object '{}' sould be a Field or Variable, not a '{}'".format(repr(target), type(target)))
+            raise Exception(
+                f"Targeted object '{repr(target)}' sould be a Field or Variable, not a '{type(target)}'"
+            )
 
         self.__targets = new_targets
 
@@ -171,14 +181,10 @@ class AbstractRelationVariableLeaf(AbstractVariableLeaf):
             raise Exception("Path cannot be None")
 
         # we check if memory referenced its value (memory is priority)
-        if path.memory is not None:
-            return path.memory.hasValue(self)
-        else:
-            return False
+        return path.memory.hasValue(self) if path.memory is not None else False
 
     @typeCheck(ParsingPath)
     def valueCMP(self, parsingPath, carnivorous=False, triggered=False):
-        results = []
         if parsingPath is None:
             raise Exception("ParsingPath cannot be None")
 
@@ -208,23 +214,19 @@ class AbstractRelationVariableLeaf(AbstractVariableLeaf):
         else:
             if possibleValue[:len(expectedValue)] == expectedValue:
                 parsingPath.addResult(self, expectedValue.copy())
-            results.append(parsingPath)
+            results = [parsingPath]
 
     @typeCheck(ParsingPath)
     def learn(self, parsingPath, carnivours=False, triggered=False):
         raise Exception("not implemented")
-        self._logger.debug("RELATION LEARN")
-        if parsingPath is None:
-            raise Exception("ParsingPath cannot be None")
-        return []
 
     def compareValues(self, content, expectedSize, computedValue):
         if content[:expectedSize].tobytes() == computedValue.tobytes():
-            msg = "The current variable data '{}' contain the expected value '{}'".format(content[:expectedSize].tobytes(), computedValue.tobytes())
+            msg = f"The current variable data '{content[:expectedSize].tobytes()}' contain the expected value '{computedValue.tobytes()}'"
             self._logger.debug(msg)
             return True
         else:
-            msg = "The current variable data '{}' does not contain the expected value '{}'".format(content[:expectedSize].tobytes(), computedValue.tobytes())
+            msg = f"The current variable data '{content[:expectedSize].tobytes()}' does not contain the expected value '{computedValue.tobytes()}'"
             self._logger.debug(msg)
             return False
 
@@ -261,20 +263,21 @@ class AbstractRelationVariableLeaf(AbstractVariableLeaf):
         expectedValue = None
         try:
             expectedValue = self.computeExpectedValue(parsingPath)
-            if self.compareValues(content, expectedSize, expectedValue):
-                self._logger.debug("The target variables contain the expected value '{}'".format(expectedValue.tobytes()))
-                parsingPath.ok &= True
-                parsingPath.addResult(self, content[:len(expectedValue)])
-                results.append(parsingPath)
-            else:
+            if not self.compareValues(content, expectedSize, expectedValue):
                 raise RelationException()
+            self._logger.debug(
+                f"The target variables contain the expected value '{expectedValue.tobytes()}'"
+            )
+            parsingPath.ok &= True
+            parsingPath.addResult(self, content[:len(expectedValue)])
+            results.append(parsingPath)
         except RelationException as e:
             if triggered:
                 raise RelationDependencyException("Computed result for current variable targets does not match the expected value", []) from None
             else:
                 parsingPath.ok = False
         except Exception as e:
-            self._logger.debug("The expected value cannot be computed. Reason: '{}'".format(e))
+            self._logger.debug(f"The expected value cannot be computed. Reason: '{e}'")
             if acceptCallBack:
                 # we add a callback
                 self._addCallBacksOnUndefinedVariables(parsingPath)
@@ -293,7 +296,9 @@ class AbstractRelationVariableLeaf(AbstractVariableLeaf):
 
     @typeCheck(GenericPath)
     def computeExpectedValue(self, parsingPath, preset=None):
-        self._logger.debug("Compute expected value for relation variable '{}' from field '{}'".format(self, self.field))
+        self._logger.debug(
+            f"Compute expected value for relation variable '{self}' from field '{self.field}'"
+        )
 
         # first checks the pointed variables all have a value
         hasValue = True
@@ -304,21 +309,20 @@ class AbstractRelationVariableLeaf(AbstractVariableLeaf):
             if variable is self:
                 continue
             if parsingPath.isVariableInaccessible(variable):
-                error_message = "The following variable is inaccessible: '{}' for field '{}'. This may be because a parent field or variable is preset.".format(variable, variable.field)
+                error_message = f"The following variable is inaccessible: '{variable}' for field '{variable.field}'. This may be because a parent field or variable is preset."
                 self._logger.debug(error_message)
                 raise InaccessibleVariableException(error_message)
             if self.is_same_symbol(variable):
                 if not parsingPath.hasData(variable):
-                    error_message = "The following variable has no value: '{}' for field '{}'".format(variable, variable.field)
+                    error_message = f"The following variable has no value: '{variable}' for field '{variable.field}'"
                     self._logger.debug(error_message)
                     hasValue = False
                     break
-            else:
-                if not parsingPath.hasDataInMemory(variable):
-                    error_message = "The following variable has no value: '{}' for field '{}'".format(variable, variable.field)
-                    self._logger.debug(error_message)
-                    hasValue = False
-                    break
+            elif not parsingPath.hasDataInMemory(variable):
+                error_message = f"The following variable has no value: '{variable}' for field '{variable.field}'"
+                self._logger.debug(error_message)
+                hasValue = False
+                break
 
         if not hasValue:
             raise RelationDependencyException(error_message, current_target)
@@ -327,15 +331,14 @@ class AbstractRelationVariableLeaf(AbstractVariableLeaf):
         for variable in self.targets:
             if variable is self:
                 size = random.randint(variable.dataType.size[0], variable.dataType.size[1])
-                value = TypeConverter.convert(b"\x00" * int(size / 8), Raw, BitArray)
+                value = TypeConverter.convert(b"\x00" * (size // 8), Raw, BitArray)
+            elif self.is_same_symbol(variable):
+                value = parsingPath.getData(variable)
             else:
-                if self.is_same_symbol(variable):
-                    value = parsingPath.getData(variable)
-                else:
-                    value = parsingPath.getDataInMemory(variable)
+                value = parsingPath.getDataInMemory(variable)
 
             if value is None:
-                raise Exception("Cannot generate value for variable: '{}'".format(variable.name))
+                raise Exception(f"Cannot generate value for variable: '{variable.name}'")
 
             values.append(value)
 
@@ -347,7 +350,9 @@ class AbstractRelationVariableLeaf(AbstractVariableLeaf):
         # Compute the relation result
         result = self.relationOperation(concatValues)
 
-        self._logger.debug("Computed value for relation variable: '{}'".format(result.tobytes()))
+        self._logger.debug(
+            f"Computed value for relation variable: '{result.tobytes()}'"
+        )
         return result
 
     @typeCheck(SpecializingPath)
@@ -358,43 +363,45 @@ class AbstractRelationVariableLeaf(AbstractVariableLeaf):
         generated value that follows the definition of the Data
 
         """
-        self._logger.debug("Regenerate relation domain '{}' for field '{}'".format(self, self.field))
+        self._logger.debug(
+            f"Regenerate relation domain '{self}' for field '{self.field}'"
+        )
         if variableSpecializerPath is None:
             raise Exception("VariableSpecializerPath cannot be None")
 
         try:
             newValue = self.computeExpectedValue(variableSpecializerPath, preset=preset)
 
-            if newValue is not None:
-                (addresult_succeed, addresult_newpaths) = variableSpecializerPath.addResult(self, newValue.copy())
-                if addresult_succeed:
-                    return addresult_newpaths
-                else:
-                    self._logger.debug("addResult() dit not succeed")
-                    return (variableSpecializerPath,)
-            else:
+            if newValue is None:
                 raise Exception("Target value is not defined currently")
+            (addresult_succeed, addresult_newpaths) = variableSpecializerPath.addResult(self, newValue.copy())
+            if addresult_succeed:
+                return addresult_newpaths
+            self._logger.debug("addResult() dit not succeed")
+            return (variableSpecializerPath,)
         except RelationDependencyException as e:
             self._logger.debug(
-                "Value not available in the relation dependencies: {}".format(e.current_target))
+                f"Value not available in the relation dependencies: {e.current_target}"
+            )
 
-            if moreCallBackAccepted:
-                self._logger.debug("A callback function is created to be computed later")
+            if not moreCallBackAccepted:
+                raise
 
-                ancestor_node = self
+            self._logger.debug("A callback function is created to be computed later")
+
+            ancestor_node = self
                 # parent = self.parent
                 # while parent is not None:
                 #     if parent.isnode():
                 #         ancestor_node = parent
                 #     parent = parent.parent
 
-                self._logger.debug("Callback registered on ancestor node: '{}'".format(ancestor_node))
-                self._logger.debug("Callback registered due to absence of content in target: '{}'".format(e.current_target))
-                variableSpecializerPath.registerVariablesCallBack(
-                    [e.current_target], ancestor_node, parsingCB=False)
-            else:
-                raise
-
+            self._logger.debug(f"Callback registered on ancestor node: '{ancestor_node}'")
+            self._logger.debug(
+                f"Callback registered due to absence of content in target: '{e.current_target}'"
+            )
+            variableSpecializerPath.registerVariablesCallBack(
+                [e.current_target], ancestor_node, parsingCB=False)
             return (variableSpecializerPath, )
         except Exception as e:
             raise

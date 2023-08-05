@@ -147,7 +147,7 @@ class GeneratorFactory(object):
         elif isinstance(generator, Iterable):
             return WrapperGenerator(iter(generator), **kwargs)
 
-        raise ValueError("Generator not supported: '{}'".format(generator))
+        raise ValueError(f"Generator not supported: '{generator}'")
 
 
 def repeatfunc(func, times=None, *args):

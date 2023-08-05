@@ -240,19 +240,24 @@ class DomainMutator(Mutator):
 
             self._minLength = 0
             self._maxLength = 2**self.lengthBitSize.value
-            self._logger.debug("Computed fuzzing interval from datatype storage size: ({}, {})".format(self._minLength, self._maxLength))
+            self._logger.debug(
+                f"Computed fuzzing interval from datatype storage size: ({self._minLength}, {self._maxLength})"
+            )
 
         else:
             # Identify min and max interval from default datatype interval
             if fuzzing_interval == FuzzingInterval.DEFAULT_INTERVAL:
                 self._minLength = model_interval[0]
                 self._maxLength = model_interval[1]
-                self._logger.debug("Computed fuzzing interval from default datatype interval: ({}, {})".format(self._minLength, self._maxLength))
+                self._logger.debug(
+                    f"Computed fuzzing interval from default datatype interval: ({self._minLength}, {self._maxLength})"
+                )
 
-            # Identify min and max interval from fuzzing parameters
             elif (isinstance(fuzzing_interval, tuple) and len(fuzzing_interval) == 2 and all(isinstance(_, int) for _ in fuzzing_interval)):
                 self._minLength, self._maxLength = fuzzing_interval
-                self._logger.debug("Computed fuzzing interval with tupple: ({}, {})".format(self._minLength, self._maxLength))
+                self._logger.debug(
+                    f"Computed fuzzing interval with tupple: ({self._minLength}, {self._maxLength})"
+                )
             else:
                 raise Exception("Not enough information to generate the fuzzing data.")
 
@@ -265,9 +270,13 @@ class DomainMutator(Mutator):
 
                 # Check size consistency
                 if self.lengthBitSize.value < bitsize_tmp.value:
-                    raise Exception("Specified lengthBitSize ({}) is too small to represent all possible data size from interval: ({}, {})".format(self.lengthBitSize, self._minLength, self._maxLength))
+                    raise Exception(
+                        f"Specified lengthBitSize ({self.lengthBitSize}) is too small to represent all possible data size from interval: ({self._minLength}, {self._maxLength})"
+                    )
 
-        self._logger.debug("Computed fuzzing interval: ({}, {}) with lengthBitSize: {}".format(self._minLength, self._maxLength, self.lengthBitSize))
+        self._logger.debug(
+            f"Computed fuzzing interval: ({self._minLength}, {self._maxLength}) with lengthBitSize: {self.lengthBitSize}"
+        )
 
         # Build the length generator
         self._lengthGenerator = GeneratorFactory.buildGenerator(generator=generator,
@@ -287,8 +296,9 @@ class DomainMutator(Mutator):
     def domain(self, domain):
         # Sanity checks on domain parameter
         if not (self.DOMAIN_TYPE is None or isinstance(domain, self.DOMAIN_TYPE)):
-            raise TypeError("Mutator domain should be of type {}. Received object: '{}'"
-                            .format(self.DOMAIN_TYPE, domain))
+            raise TypeError(
+                f"Mutator domain should be of type {self.DOMAIN_TYPE}. Received object: '{domain}'"
+            )
 
         # Sanity checks on domain datatype (AbstractVariableLeaf have a dataType, so we check its consistency)
         if isinstance(domain, AbstractVariableLeaf):
@@ -298,8 +308,9 @@ class DomainMutator(Mutator):
                 raise TypeError("Mutator domain dataType (DATA_TYPE) not set")
 
             if not (isinstance(domain_datatype, self.DATA_TYPE) or issubclass(domain_datatype, self.DATA_TYPE)):
-                raise TypeError("Mutator domain dataType should be of type '{}'. Received object: '{}'"
-                                .format(self.DATA_TYPE, domain_datatype))
+                raise TypeError(
+                    f"Mutator domain dataType should be of type '{self.DATA_TYPE}'. Received object: '{domain_datatype}'"
+                )
 
         self._domain = domain
 
@@ -311,8 +322,9 @@ class DomainMutator(Mutator):
     def mode(self, mode):
         # Sanity checks on mutator mode
         if not isinstance(mode, FuzzingMode):
-            raise TypeError("Mutator mode should be of type '{}'. Received object: '{}'"
-                            .format(FuzzingMode, mode))
+            raise TypeError(
+                f"Mutator mode should be of type '{FuzzingMode}'. Received object: '{mode}'"
+            )
         self._mode = mode
 
     @property

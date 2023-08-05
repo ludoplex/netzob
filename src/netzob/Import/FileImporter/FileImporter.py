@@ -128,10 +128,10 @@ class FileImporter(object):
     
     @typeCheck(str, bytes)
     def __readMessagesFromFile(self, filePath, delimitor=b'\n'):
-        if filePath is None or len(str(filePath).strip()) == 0:
+        if filePath is None or not str(filePath).strip():
             raise TypeError("Filepath cannot be None or empty")
- 
-        if delimitor is None or len(str(delimitor)) == 0:
+
+        if delimitor is None or not str(delimitor):
             raise TypeError("Delimitor cannot be None or empty")
 
         file_content = None
@@ -139,7 +139,7 @@ class FileImporter(object):
             file_content = fd.read()
 
         if file_content is None:
-            raise Exception("No content found in '{}'".format(filePath))
+            raise Exception(f"No content found in '{filePath}'")
 
         for i_data, data in enumerate(file_content.split(delimitor)):
             if len(data) > 0:

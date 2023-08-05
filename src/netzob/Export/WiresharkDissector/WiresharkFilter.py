@@ -70,7 +70,7 @@ class WiresharkL4Filter(WiresharkFilter):
     def iterExpressions(self):
         for msg in self.sym.messages:
             for port in [msg.l4SourceAddress, msg.l4DestinationAddress]:
-                yield ("{}.port".format(self.proto.lower()), int(port))
+                yield (f"{self.proto.lower()}.port", int(port))
 
 
 class WiresharkL3Filter(WiresharkFilter):
@@ -82,7 +82,7 @@ class WiresharkL3Filter(WiresharkFilter):
     def iterExpressions(self):
         for msg in self.sym.messages:
             for addr in [msg.l3SourceAddress, msg.l3DestinationAddress]:
-                yield ("{}.addr".format(self.proto.lower()), '"{}"'.format(addr))
+                yield (f"{self.proto.lower()}.addr", f'"{addr}"')
 
 
 class WiresharkL2Filter(WiresharkFilter):
@@ -94,4 +94,4 @@ class WiresharkL2Filter(WiresharkFilter):
     def iterExpressions(self):
         for msg in self.sym.messages:
             for addr in [msg.l2SourceAddress, msg.l2DestinationAddress]:
-                yield ("{}.addr".format("eth"), '"{}"'.format(addr))
+                yield ('eth.addr', f'"{addr}"')

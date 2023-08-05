@@ -124,12 +124,13 @@ class TimestampMutator(DomainMutator):
         FuzzingMode.GENERATE
 
         """
-        m = TimestampMutator(self.domain,
-                             mode=self.mode,
-                             generator=self.generator,
-                             seed=self.seed,
-                             counterMax=self.counterMax)
-        return m
+        return TimestampMutator(
+            self.domain,
+            mode=self.mode,
+            generator=self.generator,
+            seed=self.seed,
+            counterMax=self.counterMax,
+        )
 
     def count(self):
         r"""
@@ -159,18 +160,16 @@ class TimestampMutator(DomainMutator):
             super().generate()
 
         if self.mode == FuzzingMode.FIXED:
-            valueBytes = next(self.generator)
-        else:
+            return next(self.generator)
+        # Generate a random integer between 0 and 2**unitsize-1
+        timeValue = next(self.generator)
 
-            # Generate a random integer between 0 and 2**unitsize-1
-            timeValue = next(self.generator)
-
-            valueBytes = Integer.decode(timeValue,
-                                        unitSize=self.domain.dataType.unitSize,
-                                        endianness=self.domain.dataType.endianness,
-                                        sign=Sign.UNSIGNED)
-
-        return valueBytes
+        return Integer.decode(
+            timeValue,
+            unitSize=self.domain.dataType.unitSize,
+            endianness=self.domain.dataType.endianness,
+            sign=Sign.UNSIGNED,
+        )
 
 
 def _test_fixed():

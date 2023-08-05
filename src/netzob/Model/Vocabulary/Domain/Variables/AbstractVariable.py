@@ -65,11 +65,7 @@ class AbstractVariable(object):
         :raise: :class:`TypeError` if parameters type are not valid
 
         """
-        if name is not None:
-            self.name = name
-        else:
-            self.name = str(varType)
-
+        self.name = name if name is not None else str(varType)
         self.__varType = varType
         if scope is None:
             scope = Scope.NONE
@@ -132,8 +128,7 @@ class AbstractVariable(object):
         """
         self._logger.debug("Determine the deterministic size of the value of "
                            "the variable")
-        raise ValueError("Cannot determine a fixed size for variable '{}'"
-                         .format(self))
+        raise ValueError(f"Cannot determine a fixed size for variable '{self}'")
 
     #+---------------------------------------------------------------------------+
     #| Special Functions                                                         |
@@ -141,8 +136,8 @@ class AbstractVariable(object):
     def __key(self):
         return id(self)
 
-    def __eq__(x, y):
-        return x.__key() == y.__key()
+    def __eq__(self, y):
+        return self.__key() == y.__key()
 
     def __hash__(self):
         return self.__key()

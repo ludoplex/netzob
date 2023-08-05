@@ -64,9 +64,7 @@ class MatrixList(list):
 
     @headers.setter  # type: ignore
     def headers(self, headers):
-        self.__headers = []
-        for h in headers:
-            self.__headers.append(str(h))
+        self.__headers = [str(h) for h in headers]
 
     def __repr__(self):
         # Prepare data to be returned

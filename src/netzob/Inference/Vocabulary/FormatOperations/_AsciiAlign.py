@@ -68,8 +68,7 @@ class AsciiAlign():
                 for m in symbol.getMessages():
                     for t in m.getPattern()[1]:
                         t.setType("constant")
-                    tmpSymbol = Symbol(
-                        str(uuid.uuid4()), "Symbol " + str(i_symbol), project)
+                    tmpSymbol = Symbol(str(uuid.uuid4()), f"Symbol {str(i_symbol)}", project)
                     tmpSymbol.setPattern(m.getPattern())
                     tmpSymbol.addMessage(m)
                     self.symbols.append(tmpSymbol)
@@ -77,9 +76,8 @@ class AsciiAlign():
 
     def clusterByTokenization(self, symbols):
         self.ServerInference()
-        ################################### Cluster messages according to their tokens
-        ll = len(self.symbols) - 1
         i_equ = 0
+        ll = len(self.symbols) - 1
         while (ll > 0):
             currentPattern = self.symbols[i_equ].getMessages()[0].getPattern()[
                 1]
@@ -128,14 +126,10 @@ class AsciiAlign():
                 alignment.buildRegexFromAlignment(symbol, al,
                                                   self.defaultFormat)
 
-#                for (p, fields) in zip(symbol.getPattern()[1], symbol.getFields()):
-#                    field.setFormat(p.getFormat())
             except:
                 logging.warn(
-                    "Partitionnement error: too much fields ( > 100) for the symbol '"
-                    + symbol.getName() + "' len=" + str(
-                        len(symbol.getExtendedFields())) + "len " + str(
-                            len(symbol.getPattern()[1])))
+                    f"Partitionnement error: too much fields ( > 100) for the symbol '{symbol.getName()}' len={len(symbol.getExtendedFields())}len {len(symbol.getPattern()[1])}"
+                )
                 symbol.getField().removeLocalFields()
                 field = Field("Field 0", "(.{, })", symbol)
                 symbol.addLocalField(field)
@@ -177,8 +171,7 @@ class AsciiAlign():
         self.symbols.append(newSymbol)
 
     def mergePattern(self, p1, p2):
-        patTemp = []
-        patTemp.append(p1[0])
+        patTemp = [p1[0]]
         patTemp2 = []
         for t1, t2 in zip(p1[1], p2[1]):
 
@@ -192,11 +185,10 @@ class AsciiAlign():
             elif t2.getLength() > t1.getLength():
                 t2.setType("variable")
                 patTemp2.append(t2)
+            elif (t2.getType() == "variable"):
+                patTemp2.append(t2)
             else:
-                if (t2.getType() == "variable"):
-                    patTemp2.append(t2)
-                else:
-                    patTemp2.append(t1)
+                patTemp2.append(t1)
 
         patTemp.append(patTemp2)
         return patTemp

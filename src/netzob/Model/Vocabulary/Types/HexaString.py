@@ -157,20 +157,23 @@ class HexaString(AbstractType):
                 raise ValueError("HexaString value cannot have a length equal to 0")
 
         if value is not None and not isinstance(value, bitarray):
-            if isinstance(value, bytes):
-                from netzob.Model.Vocabulary.Types.TypeConverter import TypeConverter
-                from netzob.Model.Vocabulary.Types.BitArray import BitArray
-                value = TypeConverter.convert(value, HexaString, BitArray)
-            else:
-                raise ValueError("Unsupported input format for value: '{}', type is: '{}', expected type is 'bitarray' or 'bytes'".format(value, type(value)))
+            if not isinstance(value, bytes):
+                raise ValueError(
+                    f"Unsupported input format for value: '{value}', type is: '{type(value)}', expected type is 'bitarray' or 'bytes'"
+                )
 
+            from netzob.Model.Vocabulary.Types.TypeConverter import TypeConverter
+            from netzob.Model.Vocabulary.Types.BitArray import BitArray
+            value = TypeConverter.convert(value, HexaString, BitArray)
         if default is not None and not isinstance(default, bitarray):
             if isinstance(default, bytes):
                 from netzob.Model.Vocabulary.Types.TypeConverter import TypeConverter
                 from netzob.Model.Vocabulary.Types.BitArray import BitArray
                 default = TypeConverter.convert(default, HexaString, BitArray)
             else:
-                raise ValueError("Unsupported input format for default value: '{}', type is: '{}', expected type is 'bitarray' or 'bytes'".format(default, type(default)))
+                raise ValueError(
+                    f"Unsupported input format for default value: '{default}', type is: '{type(default)}', expected type is 'bitarray' or 'bytes'"
+                )
 
         # Handle data size if value is None
         if value is None:
@@ -189,13 +192,11 @@ class HexaString(AbstractType):
 
     def __str__(self):
         if self.value is not None:
-            return "{}({})".format(self.typeName,
-                                          repr(self.value.tobytes()))
+            return f"{self.typeName}({repr(self.value.tobytes())})"
+        if self.size[0] == self.size[1]:
+            return f"{self.typeName}(nbBytes={int(self.size[0] / 8)})"
         else:
-            if self.size[0] == self.size[1]:
-                return "{}(nbBytes={})".format(self.typeName, int(self.size[0] / 8))
-            else:
-                return "{}(nbBytes=({},{}))".format(self.typeName, int(self.size[0] / 8), int(self.size[1] / 8))
+            return f"{self.typeName}(nbBytes=({int(self.size[0] / 8)},{int(self.size[1] / 8)}))"
 
     def _convertNbBytesinNbBits(self, nbBytes):
         nbMinBit = None
@@ -241,16 +242,15 @@ class HexaString(AbstractType):
 
         if self.value is not None:
             return 1
-        else:
-            range_min = int(self.size[0] / 8)
-            range_max = int(self.size[1] / 8)
-            permitted_values = 256
-            count = 0
-            for i in range(range_min, range_max + 1):
-                count += permitted_values ** i
-                if count > AbstractType.MAXIMUM_POSSIBLE_VALUES:
-                    return AbstractType.MAXIMUM_POSSIBLE_VALUES
-            return count
+        range_min = int(self.size[0] / 8)
+        range_max = int(self.size[1] / 8)
+        permitted_values = 256
+        count = 0
+        for i in range(range_min, range_max + 1):
+            count += permitted_values ** i
+            if count > AbstractType.MAXIMUM_POSSIBLE_VALUES:
+                return AbstractType.MAXIMUM_POSSIBLE_VALUES
+        return count
 
     def canParse(self, data):
         r"""It verifies the value is a string which only includes hexadecimal
@@ -316,14 +316,15 @@ class HexaString(AbstractType):
 
         # Check if data is in bytes and normalize it in bitarray
         if not isinstance(data, bitarray):
-            if isinstance(data, bytes):
-                from netzob.Model.Vocabulary.Types.TypeConverter import TypeConverter
-                from netzob.Model.Vocabulary.Types.BitArray import BitArray
-                bits_data = TypeConverter.convert(data, HexaString, BitArray)
-                data = bits_data
-            else:
-                raise ValueError("Unsupported input format for data: '{}', type: '{}'".format(data, type(data)))
+            if not isinstance(data, bytes):
+                raise ValueError(
+                    f"Unsupported input format for data: '{data}', type: '{type(data)}'"
+                )
 
+            from netzob.Model.Vocabulary.Types.TypeConverter import TypeConverter
+            from netzob.Model.Vocabulary.Types.BitArray import BitArray
+            bits_data = TypeConverter.convert(data, HexaString, BitArray)
+            data = bits_data
         # Compare with self.value if it is defined
         if self.value is not None:
             return self.value == data
@@ -343,11 +344,9 @@ class HexaString(AbstractType):
         allowedValues.extend(["a", "b", "c", "d", "e", "f"])
 
         hexa_data = binascii.hexlify(data.tobytes())
-        for i in range(0, len(hexa_data)):
-            if not chr(hexa_data[i]) in allowedValues:
-                return False
-
-        return True
+        return all(
+            chr(hexa_data[i]) in allowedValues for i in range(0, len(hexa_data))
+        )
 
     def generate(self, generationStrategy=None):
         """Generates a random HexaString that respects the requested size or the
@@ -394,7 +393,10 @@ class HexaString(AbstractType):
         generatedSize = random.randint(minSize, maxSize)
 
         generatedValue = None
-        generatedValue = b''.join(random.randint(0, 255).to_bytes(length=1, byteorder='big') for i in range(int(generatedSize / 8)))
+        generatedValue = b''.join(
+            random.randint(0, 255).to_bytes(length=1, byteorder='big')
+            for _ in range(generatedSize // 8)
+        )
 
         result = bitarray(endian='big')
         result.frombytes(generatedValue)
@@ -442,7 +444,7 @@ class HexaString(AbstractType):
             raise TypeError("data cannot be None")
 
         if len(data) % 2 != 0:
-            raise Exception("The data '{}' should be byte-aligned".format(data))
+            raise Exception(f"The data '{data}' should be byte-aligned")
 
         return binascii.unhexlify(data)
 

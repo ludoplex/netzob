@@ -237,7 +237,7 @@ class FieldSplitStatic(object):
             for data in field.getValues(encoded=False)
         ]
 
-        if len(fieldValues) == 0:
+        if not fieldValues:
             raise Exception("No value found in the field.")
 
         # Retrieve longuest field value
@@ -288,19 +288,19 @@ class FieldSplitStatic(object):
                     # static
                     if len(dynamicSequences) > 0:
                         dynValues = zip(*dynamicSequences)
-                        tmp_result = []
-                        for d in dynValues:
-                            tmp_result.append(b''.join(
-                                [x if x is not None else b'' for x in d]))
+                        tmp_result = [
+                            b''.join([x if x is not None else b'' for x in d])
+                            for d in dynValues
+                        ]
                         result.append(tmp_result)
                         dynamicSequences = []
                     result.append(values)
             if len(dynamicSequences) > 0:
                 dynValues = zip(*dynamicSequences)
-                tmp_result = []
-                for d in dynValues:
-                    tmp_result.append(
-                        b''.join([x if x is not None else b'' for x in d]))
+                tmp_result = [
+                    b''.join([x if x is not None else b'' for x in d])
+                    for d in dynValues
+                ]
                 result.append(tmp_result)
 
             indexedValues = result

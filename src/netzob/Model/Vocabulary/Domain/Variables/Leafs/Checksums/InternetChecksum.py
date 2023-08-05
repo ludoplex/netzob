@@ -100,9 +100,6 @@ class InternetChecksum(CRC16):
 
         s = 0
         for i in range(0, len(msg), 2):
-            if i + 1 >= len(msg):
-                w = msg[i] & 0xFF
-            else:
-                w = msg[i] + (msg[i + 1] << 8)
+            w = msg[i] & 0xFF if i + 1 >= len(msg) else msg[i] + (msg[i + 1] << 8)
             s = carry_around_add(s, w)
         return ~s & 0xffff

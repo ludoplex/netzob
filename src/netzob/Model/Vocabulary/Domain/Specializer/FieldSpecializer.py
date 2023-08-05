@@ -109,7 +109,7 @@ class FieldSpecializer(object):
     """
 
     def __init__(self, field, preset=None, memory=None):
-        self._logger.debug("Creating a new FieldSpecializer for field '{}'".format(field))
+        self._logger.debug(f"Creating a new FieldSpecializer for field '{field}'")
 
         self.field = field
         self.preset = preset
@@ -169,6 +169,4 @@ class FieldSpecializer(object):
 
         # we create a first VariableParser and uses it to parse the domain
         variableSpecializer = VariableSpecializer(domain, preset=self.preset)
-        resultSpecializingPaths = variableSpecializer.specialize(specializingPath)
-
-        return resultSpecializingPaths
+        return variableSpecializer.specialize(specializingPath)

@@ -419,7 +419,9 @@ class Agg(AbstractVariableNode):
         """Parse the content with the definition domain of the aggregate.
         """
         dataToParse = parsingPath.getData(self).copy()
-        self._logger.debug("Parse '{}' as {} with parser path '{}'".format(dataToParse.tobytes(), self, parsingPath))
+        self._logger.debug(
+            f"Parse '{dataToParse.tobytes()}' as {self} with parser path '{parsingPath}'"
+        )
 
         # Clean parsed data associated to children (needed if we are in a iteration of a Repeat)
         for child in self.children:
@@ -441,7 +443,9 @@ class Agg(AbstractVariableNode):
                             parsedData += child_data
 
                 if parsedData is not None:
-                    self._logger.debug("Agg data successfuly parsed with {}: '{}'".format(self, parsedData.tobytes()))
+                    self._logger.debug(
+                        f"Agg data successfuly parsed with {self}: '{parsedData.tobytes()}'"
+                    )
                     path.addResult(self, parsedData)
                     yield path
         except Exception as e:
@@ -460,7 +464,9 @@ class Agg(AbstractVariableNode):
         else:
             next_child = None
 
-        self._logger.debug("Parse {} (child {}/{}) with {}".format(current_child, i_child + 1, len(self.children), parsingPath))
+        self._logger.debug(
+            f"Parse {current_child} (child {i_child + 1}/{len(self.children)}) with {parsingPath}"
+        )
         value_before_parsing = parsingPath.getData(current_child).copy()
 
         childParsingPaths = current_child.parse(parsingPath, carnivorous=carnivorous)
@@ -469,7 +475,9 @@ class Agg(AbstractVariableNode):
             value_after_parsing = childParsingPath.getData(current_child).copy()
             remainingValue = value_before_parsing[len(value_after_parsing):].copy()
 
-            self._logger.debug("Children {} succesfuly applied with the parsingPath {}".format(current_child, childParsingPath))
+            self._logger.debug(
+                f"Children {current_child} succesfuly applied with the parsingPath {childParsingPath}"
+            )
 
             if next_child is not None:
 
@@ -557,31 +565,29 @@ class Agg(AbstractVariableNode):
         if type(child) == type and child == SELF:
             # Nothing to specialize in this case (the recursive specialization is done later)
             childSpecializingPaths = (specializingPath, )
-        else:
-            if not specializingPath.hasData(child):
-                childSpecializingPaths = child.specialize(specializingPath, preset=preset)
-            else:
-                self._logger.debug("Not specializing the AGG.child as it has already a data")
-                childSpecializingPaths = (specializingPath, )
+        elif specializingPath.hasData(child):
+            self._logger.debug("Not specializing the AGG.child as it has already a data")
+            childSpecializingPaths = (specializingPath, )
 
+        else:
+            childSpecializingPaths = child.specialize(specializingPath, preset=preset)
         for path in childSpecializingPaths:
 
             # Handle recursive mode
             if type(child) == type and child == SELF and specialize_last_child:
-                if path.hasData(self):
-                    newResult = path.getData(self)
-                else:
-                    newResult = bitarray('')
+                newResult = path.getData(self) if path.hasData(self) else bitarray('')
                 for inner_path in self._inner_specialize(path, idx, preset):
 
                     if inner_path.hasData(self):
                         current_value = inner_path.getData(self)
                         newResult = newResult + current_value
-                        self._logger.debug("Cumulative generated value for {}: {}".format(self, newResult.tobytes()))
+                        self._logger.debug(
+                            f"Cumulative generated value for {self}: {newResult.tobytes()}"
+                        )
 
             if idx == len(self.children) - 1:
                 self._produce_data(path, specialize_last_child)
-                self._logger.debug("End of specialization for AGG '{}'".format(self))
+                self._logger.debug(f"End of specialization for AGG '{self}'")
                 yield path
             else:
                 yield from self._inner_specialize(path, idx + 1, preset)
@@ -591,20 +597,22 @@ class Agg(AbstractVariableNode):
         for idx, child in enumerate(self.children):
             if len(self.children) - 1 == idx and not specialize_last_child:
                 pass
-            elif type(child) == type and child == SELF:
-                pass
-            else:
+            elif type(child) != type or child != SELF:
                 if path.hasData(child):
                     data += path.getData(child)
                 else:
-                    self._logger.debug("At least one AGG child ('{}') has no content, therefore we don't produce content for the AGG".format(child))
-                    self._logger.debug("Callback registered on ancestor node: '{}'".format(self))
-                    self._logger.debug("Callback registered due to absence of content in target: '{}'".format(child))
+                    self._logger.debug(
+                        f"At least one AGG child ('{child}') has no content, therefore we don't produce content for the AGG"
+                    )
+                    self._logger.debug(f"Callback registered on ancestor node: '{self}'")
+                    self._logger.debug(
+                        f"Callback registered due to absence of content in target: '{child}'"
+                    )
                     path.registerVariablesCallBack(
                         [child], self, parsingCB=False)
                     return
 
-        self._logger.debug("Generated value for {}: {}".format(self, data.tobytes()))
+        self._logger.debug(f"Generated value for {self}: {data.tobytes()}")
         path.addResult(self, data)
 
 

@@ -37,5 +37,4 @@ import unittest
 
 
 def getSuite():
-    functionsSuite = unittest.TestSuite()
-    return functionsSuite
+    return unittest.TestSuite()

@@ -130,13 +130,14 @@ class BitArrayMutator(DomainMutator):
         FuzzingMode.GENERATE
 
         """
-        m = BitArrayMutator(self.domain,
-                            mode=self.mode,
-                            generator=self.generator,
-                            seed=self.seed,
-                            counterMax=self.counterMax,
-                            lengthBitSize=self.lengthBitSize)
-        return m
+        return BitArrayMutator(
+            self.domain,
+            mode=self.mode,
+            generator=self.generator,
+            seed=self.seed,
+            counterMax=self.counterMax,
+            lengthBitSize=self.lengthBitSize,
+        )
 
     def count(self):
         r"""
@@ -190,30 +191,26 @@ class BitArrayMutator(DomainMutator):
             super().generate()
 
         if self.mode == FuzzingMode.FIXED:
-            valueBytes = next(self.generator)
-        else:
+            return next(self.generator)
+        # Generate length of random data
+        length = next(self._lengthGenerator)
 
-            # Generate length of random data
-            length = next(self._lengthGenerator)
+        # Generate random data
+        value_bits = bitarray('')
+        if length == 0:
+            return value_bits.tobytes()
+        while True:
+            # Generate random sequence of bits, octet per octet
+            data_int = next(self.generator)
+            data_bytes = data_int.to_bytes(4, byteorder='big')
+            data_bits = bitarray()
+            data_bits.frombytes(data_bytes)
 
-            # Generate random data
-            value_bits = bitarray('')
-            if length == 0:
-                return value_bits.tobytes()
-            while True:
-                # Generate random sequence of bits, octet per octet
-                data_int = next(self.generator)
-                data_bytes = data_int.to_bytes(4, byteorder='big')
-                data_bits = bitarray()
-                data_bits.frombytes(data_bytes)
-
-                # Concatenate the generated data
-                value_bits += data_bits
-                if len(value_bits) >= length:
-                    break
-            valueBytes = value_bits[:length].tobytes()
-
-        return valueBytes
+            # Concatenate the generated data
+            value_bits += data_bits
+            if len(value_bits) >= length:
+                break
+        return value_bits[:length].tobytes()
 
 
 def _test():

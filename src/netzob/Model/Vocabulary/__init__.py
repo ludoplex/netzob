@@ -84,11 +84,9 @@ def typeSpecifier(klass: Callable[..., Any],
     True
     """
 
-    # build the list of all named presets
-    kw_pairs = []  # type: List[Iterable[Tuple[str, Any]]]
-    for key, values in defaults.items():
-        kw_pairs.append([(key, value) for value in values])
-
+    kw_pairs = [
+        [(key, value) for value in values] for key, values in defaults.items()
+    ]
     # build the product of all possible combinations, grouped by attribute
     prod = product(*kw_pairs)
     kw_prod = map(dict, prod)  # type: Iterable[Dict[str, Tuple[str, Any]]]

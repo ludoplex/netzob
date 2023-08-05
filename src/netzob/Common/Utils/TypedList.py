@@ -68,7 +68,7 @@ class TypedList(collections.abc.MutableSequence):
 
     def __init__(self, membersTypes, *args):
         self.membersTypes = membersTypes
-        self.list = list()
+        self.list = []
         self.extend(list(args))
 
     def check(self, v):
@@ -95,7 +95,7 @@ class TypedList(collections.abc.MutableSequence):
         self.list.insert(i, v)
 
     def __str__(self):
-        return str(',\n'.join([str(x) for x in self.list]))
+        return ',\n'.join([str(x) for x in self.list])
 
     def __repr__(self):
         return repr(self.list)

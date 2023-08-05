@@ -57,13 +57,9 @@ def getFiles():
     repositoryIndex = repository.index
     for d in repositoryIndex.diff('HEAD'):
         # Added path
-        if d.deleted_file:
+        if d.deleted_file or not d.new_file:
             path = d.a_blob.path
-            if not path in listFile:
-                listFile.append(path)
-        elif not d.new_file:
-            path = d.a_blob.path
-            if not path in listFile:
+            if path not in listFile:
                 listFile.append(path)
     return listFile
 
@@ -73,11 +69,10 @@ def checkPEP8(file):
     try:
         p = subprocess.Popen(['pep8', '--repeat', '--ignore=E501', file], stdout=subprocess.PIPE)
         out, err = p.communicate()
-        for line in out.splitlines():
-            localResult.append(line)
+        localResult.extend(iter(out.splitlines()))
         return localResult
     except Exception as e:
-        if str(e).find("[Errno 2] No such file or directory") != -1 :
+        if "[Errno 2] No such file or directory" in str(e):
             print("[E] PEP8 is not installed.")
         else:
             print("[E] PEP8 does not work, it is probably not installed.\nThe error is : {0}".format(str(e)))
@@ -89,21 +84,20 @@ def checkClassDeclation(file):
     with open(file, 'rb') as f:
         lineNumber = 0
         for line in f:
-            m = re.search('class\s+[^\(]*:', line)
-            if m:
+            if m := re.search('class\s+[^\(]*:', line):
                 localResult.append("Old class definition found on {0}".format(m.group()))
     return localResult
 
 
 def searchForPattern(file, pattern, errorName):
     localResult = []
-    fileObject = open(file)
-    lineNumber = 0
-    for line in fileObject:
-        lineNumber += 1
-        if re.search(pattern, line) and not re.search('Thisisnotaconflict', line):
-            localResult.append(str(errorName) + " found at line " + str(lineNumber))
-    fileObject.close()
+    with open(file) as fileObject:
+        localResult.extend(
+            f"{str(errorName)} found at line {str(lineNumber)}"
+            for lineNumber, line in enumerate(fileObject, start=1)
+            if re.search(pattern, line)
+            and not re.search('Thisisnotaconflict', line)
+        )
     return localResult
 
 
@@ -111,11 +105,11 @@ def searchForPattern(file, pattern, errorName):
 def checkForCRLF(file):
     localResult = []
     with open(file, 'rb') as f:
-        lineNumber = 0
-        for line in f:
-            lineNumber += 1
-            if line.endswith(b"\r\n"):
-                localResult.append("A CRLF ending patterns found at line " + str(lineNumber))
+        localResult.extend(
+            f"A CRLF ending patterns found at line {str(lineNumber)}"
+            for lineNumber, line in enumerate(f, start=1)
+            if line.endswith(b"\r\n")
+        )
     return localResult
 
 
@@ -149,7 +143,7 @@ def checkHeader(file):
     headerGlade = header3.replace("---------------------------------------------------------------------------", "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")     # For other
     with open(file, 'rb') as f:
         data = f.read()
-    if not header in data and not header2 in data and not header3 in data:
+    if header not in data and header2 not in data and header3 not in data:
         if file.startswith(os.path.join("src", "netzob_plugins")):  # Plugin
             headersPlugin = header.split("2011 Georges Bossert and Frédéric Guihéry                   |")
             if headersPlugin[0] in data and headersPlugin[1] in data:
@@ -159,7 +153,7 @@ def checkHeader(file):
 
 
 def checkFile(file):
-    results = dict()
+    results = {}
 
     if file.endswith("__init__.py"):
         return results
@@ -199,13 +193,15 @@ def verifyResults(results):
             for ruleName in ruleNames:
                 ruleErrors = resultFile[ruleName]
                 if ruleErrors is not None and len(ruleErrors) > 0:
-                    for ruleError in ruleErrors:
-                        errorForCurrentFile.append("[E]\t %s : %s" % (ruleName, ruleError))
+                    errorForCurrentFile.extend(
+                        "[E]\t %s : %s" % (ruleName, ruleError)
+                        for ruleError in ruleErrors
+                    )
                     result = 1
                     localResult = 1
 
-            if len(errorForCurrentFile) > 0:
-                print("[I] File %s:" % (f))
+            if errorForCurrentFile:
+                print(f"[I] File {f}:")
                 for err in errorForCurrentFile:
                     print(err)
 
@@ -213,21 +209,18 @@ def verifyResults(results):
 
 def analyze(providedFiles):
 
+    files = []
     if providedFiles is None:
         # Retrieve all the files to analyze
         print("[I] Retrieve all the files to analyze from the staged area.")
         tmp_files = getFiles()
-        files = []
         # Filters directories which could appears in files due to submodules creation
         # TODO : should be invastigated in details why this could happen
-        for f in tmp_files:
-            if os.path.isfile(f):
-                files.append(f)
+        files.extend(f for f in tmp_files if os.path.isfile(f))
     else:
         print("[I] Retrieve all the file to analyze from the command line arguments.")
         filesToAnalyze = getFilesFromListOfPath(providedFiles)
 
-        files = []
         for fileToAnalyze in filesToAnalyze:
             if os.path.isfile(fileToAnalyze):
                 try:
@@ -235,12 +228,11 @@ def analyze(providedFiles):
                     test.close()
                     files.append(fileToAnalyze)
                 except:
-                    print("[E] File %s exists but is not readable." % fileToAnalyze)
+                    print(f"[E] File {fileToAnalyze} exists but is not readable.")
 
-    globalResults = dict()
-    for fileToAnalyze in files:
-        globalResults[fileToAnalyze] = checkFile(fileToAnalyze)
-
+    globalResults = {
+        fileToAnalyze: checkFile(fileToAnalyze) for fileToAnalyze in files
+    }
     # Compute the final result (0=sucess, 1=cannot commit)
     result = verifyResults(globalResults)
     if result == 0:
@@ -256,18 +248,13 @@ def getFilesFromListOfPath(paths):
             result.append(p)
         elif os.path.isdir(p):
             subfiles = os.listdir(p)
-            toAnalyze = []
-            for s in subfiles:
-                toAnalyze.append(os.path.join(p, s))
+            toAnalyze = [os.path.join(p, s) for s in subfiles]
             subfilesResult = getFilesFromListOfPath(toAnalyze)
             result.extend(subfilesResult)
     return result
 
 if __name__ == '__main__':
 
-    filesToAnalyze = None
-    if (len(sys.argv) > 1):
-        filesToAnalyze = sys.argv[1:]
-
+    filesToAnalyze = sys.argv[1:] if (len(sys.argv) > 1) else None
     # Execute the analysis
     analyze(filesToAnalyze)

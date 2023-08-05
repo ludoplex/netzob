@@ -159,8 +159,8 @@ class Protocol(object):
         return symbols
 
     def _load_zdl_files(self):
-        format_zdl = join(self.path_zdl, self.name + "_format.zdl")
-        automata_zdl = join(self.path_zdl, self.name + "_automata.zdl")
+        format_zdl = join(self.path_zdl, f"{self.name}_format.zdl")
+        automata_zdl = join(self.path_zdl, f"{self.name}_automata.zdl")
 
         if len(format_zdl) > 0:
             self._initializeSymbols(format_zdl)
@@ -178,7 +178,7 @@ class Protocol(object):
         self.symbols = Symbols(modLoaded.symbols)
 
         if len(self.symbols) == 0:
-            raise Exception("No symbol defined in '{}'.".format(path))
+            raise Exception(f"No symbol defined in '{path}'.")
 
     def _initializeAutomata(self, path):
         """Parse an automata from a ZDL file.

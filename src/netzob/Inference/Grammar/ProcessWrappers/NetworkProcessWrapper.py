@@ -117,9 +117,9 @@ class NetworkProcessWrapper(ProcessWrapper):
 
     def __str__(self):
         if self.alive() and self.__process_pid is not None:
-            return "Process '{}' alive since {} (PID={}, CLI={}, listen={}:{}) ".format(self.name, self.started_at, self.__process_pid, self.command_line, self.listen_ip, self.listen_port)
+            return f"Process '{self.name}' alive since {self.started_at} (PID={self.__process_pid}, CLI={self.command_line}, listen={self.listen_ip}:{self.listen_port}) "
         else:
-            return "Process '{}' (CLI={}, listen={}:{})".format(self.name, self.command_line, self.listen_ip, self.listen_port)
+            return f"Process '{self.name}' (CLI={self.command_line}, listen={self.listen_ip}:{self.listen_port})"
     
 
     def is_ready(self):

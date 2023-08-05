@@ -203,15 +203,16 @@ class AltMutator(DomainMutator):
             mutator, mutator_default_parameters = v
             copy_mappingTypesMutators[k] = mutator_default_parameters
 
-        m = AltMutator(self.domain,
-                       mode=self.mode,
-                       generator=self.generator,
-                       seed=self.seed,
-                       counterMax=self.counterMax,
-                       mutateChild=self.mutateChild,
-                       mappingTypesMutators=copy_mappingTypesMutators,
-                       maxDepth=self.maxDepth)
-        return m
+        return AltMutator(
+            self.domain,
+            mode=self.mode,
+            generator=self.generator,
+            seed=self.seed,
+            counterMax=self.counterMax,
+            mutateChild=self.mutateChild,
+            mappingTypesMutators=copy_mappingTypesMutators,
+            maxDepth=self.maxDepth,
+        )
 
     def count(self, preset=None):
         r"""
@@ -323,7 +324,7 @@ called, first")
 
         self._currentDepth += 1
         if self._currentDepth >= self.maxDepth:
-            raise RecursionException("Max depth reached ({})".format(self.maxDepth))
+            raise RecursionException(f"Max depth reached ({self.maxDepth})")
 
         return next(self.generator)
 

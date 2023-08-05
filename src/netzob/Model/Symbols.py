@@ -67,12 +67,13 @@ class Symbols(dict):
 
         for symbol in symbols:
             if not isinstance(symbol, Symbol):
-                raise ValueError("Symbols only accept Symbol object, not '{}'"
-                                 .format(type(symbol).__name__))
+                raise ValueError(
+                    f"Symbols only accept Symbol object, not '{type(symbol).__name__}'"
+                )
             self[symbol.name] = symbol
 
     def __iter__(self):
         return iter(self.values())
 
     def __repr__(self):
-        return "Symbols({})".format(', '.join(map(repr, self.values())))
+        return f"Symbols({', '.join(map(repr, self.values()))})"

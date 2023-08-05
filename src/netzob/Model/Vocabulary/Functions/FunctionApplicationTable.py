@@ -119,15 +119,19 @@ class FunctionApplicationTable(object):
         for col in range(0, len(self.splittedData)):
             encodedCol = encodedResult[col]
             if len(encodedCol) > 0:
-                toApplyFunction = []
-                # Retrieve all the visualization functions we should apply on current column
-                for (i_col, i_local_start, i_local_end, i_start, i_end, data,
-                     function) in visualizationFunctions:
-                    if i_col == col:
-                        toApplyFunction.append(
-                            (i_col, i_local_start, i_local_end, i_start, i_end,
-                             data, function))
-
+                toApplyFunction = [
+                    (
+                        i_col,
+                        i_local_start,
+                        i_local_end,
+                        i_start,
+                        i_end,
+                        data,
+                        function,
+                    )
+                    for i_col, i_local_start, i_local_end, i_start, i_end, data, function in visualizationFunctions
+                    if i_col == col
+                ]
                 # Prepare functions for current column
                 for (i_col, i_local_start, i_local_end, i_start, i_end, data,
                      function) in toApplyFunction:
@@ -181,17 +185,13 @@ class FunctionApplicationTable(object):
         for i in list(self.conversionAddressingTable.keys()):
             currentOld = self.conversionAddressingTable[i]
             if i == i_global:
-                result = []
-                for a in currentOld:
-                    result.append(a + offset)
+                result = [a + offset for a in currentOld]
                 self.conversionAddressingTable[i] = result
             elif i > i_global:
                 o = currentOld[0] - previousOld[0]
 
                 r = self.conversionAddressingTable[i - 1]
-                t = []
-                for a in r:
-                    t.append(a + o)
+                t = [a + o for a in r]
                 self.conversionAddressingTable[i] = t
 
             previousOld = currentOld
@@ -201,11 +201,11 @@ class FunctionApplicationTable(object):
         self.tags.append((i_col, idTag, i, tag))
 
     def getTags(self, col, i_local):
-        tags = []
-        for (i_col, idTag, i, tag) in self.tags:
-            if i_col == col and i == i_local:
-                tags.append(tag)
-        return tags
+        return [
+            tag
+            for i_col, idTag, i, tag in self.tags
+            if i_col == col and i == i_local
+        ]
 
     def updateConversionAddressingTableWithTable(self, table):
         for original_indice in list(table.keys()):
@@ -230,35 +230,34 @@ class FunctionApplicationTable(object):
 
         for i in list(self.conversionAddressingTable.keys()):
             if i >= old_start and i < old_end:
-                if type == "reduction":
-                    tmp_i = (i - old_start)
-                    new_i = old_start + tmp_i // factor
-                    result = [new_i]
-                elif type == "increase":
+                if type == "increase":
                     new_i = i
                     result = [new_i]
-                    for a in range(0, factor):
+                    for _ in range(0, factor):
                         new_i = new_i + 1
                         result.append(new_i)
+                elif type == "reduction":
+                    tmp_i = (i - old_start)
+                    result = [old_start + tmp_i // factor]
                 else:
                     result = self.conversionAddressingTable[i]
                 self.conversionAddressingTable[i] = result
             elif i >= old_end:
                 r = []
                 for k in self.conversionAddressingTable[i]:
-                    if type == "reduction":
-                        r.append(k - factor)
-                    elif type == "increase":
+                    if type == "increase":
                         r.append(k + factor)
+                    elif type == "reduction":
+                        r.append(k - factor)
                     else:
                         r = self.conversionAddressingTable[i]
                 self.conversionAddressingTable[i] = r
 
     def getInitialConversionAddressingTable(self):
-        addressingTable = dict()
+        addressingTable = {}
         i = 0
         for col in self.splittedData:
-            for i_col in range(0, len(col)):
+            for _ in range(0, len(col)):
                 addressingTable[i] = [i]
                 i = i + 1
         return addressingTable
@@ -287,22 +286,20 @@ class FunctionApplicationTable(object):
                     return segments
                 i = i + 1
 
-            if len(col_data) > 0:
-                if in_segment is True and i is i_end:
-                    i_local_end = len(col_data)
-                    segments.append((i_col, i_local_start, i_local_end,
-                                     i_start, i_end, segment))
+            if in_segment is True:
+                if len(col_data) > 0:
+                    if i is i_end:
+                        segments.append((i_col, i_local_start, len(col_data), i_start, i_end, segment))
+                        in_segment = False
+                    else:
+                        # The segment closes in the next col
+                        # first we close this one
+                        i_local_end = i_col_data + 1
+                        segments.append((i_col, i_local_start, i_local_end,
+                                         i_start, i_end, segment))
+                        in_segment is True
+                        i_local_start = 0
                     segment = ""
-                    in_segment = False
-                elif in_segment is True:
-                    # The segment closes in the next col
-                    # first we close this one
-                    i_local_end = i_col_data + 1
-                    segments.append((i_col, i_local_start, i_local_end,
-                                     i_start, i_end, segment))
-                    segment = ""
-                    in_segment is True
-                    i_local_start = 0
         if i is i_end and in_segment is True:
             in_segment = False
             i_local_end = len(col_data) + 1

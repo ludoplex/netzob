@@ -131,11 +131,11 @@ class MessageSpecializer(object):
         # First, we normalize the targets of relantionship variables
         for field in symbol.getLeafFields(includePseudoFields=True):
             if field.domain is not None and isinstance(field.domain, AbstractRelationVariableLeaf):
-                self._logger.debug("Normalize field targets for field '{}'".format(field.name))
+                self._logger.debug(f"Normalize field targets for field '{field.name}'")
                 field.domain.normalize_targets()
 
         # Convert list into generator
-        new_paths = (new_path for new_path in specializingPaths)
+        new_paths = iter(specializingPaths)
 
         # Iterate over each possibility of specialization
         i_current_field = 0
@@ -143,7 +143,7 @@ class MessageSpecializer(object):
 
     def _inner_specialize(self, paths, fields, i_current_field, symbol):
 
-        self._logger.debug("Specializing field: '{}'".format(fields[i_current_field]))
+        self._logger.debug(f"Specializing field: '{fields[i_current_field]}'")
 
         field = fields[i_current_field]
 
@@ -160,16 +160,13 @@ class MessageSpecializer(object):
                 for idx, path in enumerate(new_paths):
                     if field.domain.isnode() or i_current_field > 0:
                         self._produce_data(path, symbol)
-                    else:
-                        # In mutate mode, do not produce when
-                        # itering new_paths, as the
-                        # generatedContent has already been set
-                        # (only works when symbol has one field
-                        # and the field domain is a leaf)
-                        if idx > 0 and self.preset is not None and self.preset.get(field.domain) is not None and self.preset.get(field.domain).mode == FuzzingMode.MUTATE:
-                            pass
-                        else:
-                            self._produce_data(path, symbol)
+                    elif (
+                        idx <= 0
+                        or self.preset is None
+                        or self.preset.get(field.domain) is None
+                        or self.preset.get(field.domain).mode != FuzzingMode.MUTATE
+                    ):
+                        self._produce_data(path, symbol)
                     yield path
 
     def _produce_data(self, retainedPath, symbol):

@@ -137,13 +137,14 @@ class HexaStringMutator(DomainMutator):
         FuzzingMode.GENERATE
 
         """
-        m = HexaStringMutator(self.domain,
-                              mode=self.mode,
-                              generator=self.generator,
-                              seed=self.seed,
-                              counterMax=self.counterMax,
-                              lengthBitSize=self.lengthBitSize)
-        return m
+        return HexaStringMutator(
+            self.domain,
+            mode=self.mode,
+            generator=self.generator,
+            seed=self.seed,
+            counterMax=self.counterMax,
+            lengthBitSize=self.lengthBitSize,
+        )
 
     def count(self):
         r"""

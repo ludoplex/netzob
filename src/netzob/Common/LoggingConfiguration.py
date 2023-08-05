@@ -50,7 +50,7 @@ def singleton(cls, *args, **kwargs):
     def getinstance(*args, **kwargs):
         if cls not in instances:
             instances[cls] = cls(*args, **kwargs)
-        elif len(args) == 0:
+        elif not args:
             return instances[cls]
         else:
             raise Exception("{0} is already initialized".format(cls.__name__))

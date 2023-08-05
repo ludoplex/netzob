@@ -61,14 +61,10 @@ class EmptySymbol(Symbol):
             fields=None, name="Empty Symbol", messages=[RawMessage()])
 
     def __eq__(self, other):
-        if other is None:
-            return False
-        return isinstance(other, EmptySymbol)
+        return False if other is None else isinstance(other, EmptySymbol)
 
     def __ne__(self, other):
-        if other is None:
-            return True
-        return not isinstance(other, EmptySymbol)
+        return True if other is None else not isinstance(other, EmptySymbol)
 
     def __repr__(self):
         return "Empty Symbol"

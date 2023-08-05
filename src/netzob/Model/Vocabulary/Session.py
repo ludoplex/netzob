@@ -194,8 +194,7 @@ class Session(object):
             dst = message.destination
             endpoints1 = (src, dst)
             endpoints2 = (dst, src)
-            if (not endpoints1 in endpointsList) and (
-                    not endpoints2 in endpointsList):
+            if endpoints1 not in endpointsList and endpoints2 not in endpointsList:
                 endpointsList.append(endpoints1)
         return endpointsList
 
@@ -239,7 +238,8 @@ class Session(object):
             trueSession = Session(
                 messages=trueSessionMessages,
                 applicativeData=self.applicativeData,
-                name="Session: '" + str(src) + "' - '" + str(dst) + "'")
+                name=f"Session: '{str(src)}' - '{str(dst)}'",
+            )
             trueSessions.append(trueSession)
         return trueSessions
 
@@ -261,10 +261,7 @@ class Session(object):
 
         """
 
-        if len(self.getTrueSessions()) == 1:
-            return True
-        else:
-            return False
+        return len(self.getTrueSessions()) == 1
 
     @typeCheck(list)
     def abstract(self, symbolList):

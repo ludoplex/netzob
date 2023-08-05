@@ -264,11 +264,7 @@ class Padding(AbstractRelationVariableLeaf):
         if self in map_objects:
             return map_objects[self]
 
-        if self.dataType is not None:
-            new_data = self.dataType
-        else:
-            new_data = self.data_callback
-
+        new_data = self.dataType if self.dataType is not None else self.data_callback
         new_padding = Padding([], new_data, self.modulo, once=self.once, factor=self.factor, offset=self.offset)
         map_objects[self] = new_padding
 
@@ -291,11 +287,11 @@ class Padding(AbstractRelationVariableLeaf):
             return self.compareLength(content, expectedSize, computedValue)
 
         if content[:self._current_length_to_pad].tobytes() == computedValue.tobytes():
-            msg = "The current variable data '{}' contain the expected value '{}'".format(content[:self._current_length_to_pad].tobytes(), computedValue.tobytes())
+            msg = f"The current variable data '{content[:self._current_length_to_pad].tobytes()}' contain the expected value '{computedValue.tobytes()}'"
             self._logger.debug(msg)
             return True
         else:
-            msg = "The current variable data '{}' does not contain the expected value '{}'".format(content[:expectedSize].tobytes(), computedValue.tobytes())
+            msg = f"The current variable data '{content[:expectedSize].tobytes()}' does not contain the expected value '{computedValue.tobytes()}'"
             self._logger.debug(msg)
             return False
 
@@ -338,13 +334,12 @@ class Padding(AbstractRelationVariableLeaf):
             # Retrieve variable value
             if variable is self:
                 value = bitarray()
+            elif parsingPath.hasData(variable):
+                value = parsingPath.getData(variable)
             else:
-                if parsingPath.hasData(variable):
-                    value = parsingPath.getData(variable)
-                else:
-                    error_message = "The following variable has no value: '{}' for field '{}'".format(variable, variable.field)
-                    self._logger.debug(error_message)
-                    raise RelationDependencyException(error_message, variable)
+                error_message = f"The following variable has no value: '{variable}' for field '{variable.field}'"
+                self._logger.debug(error_message)
+                raise RelationDependencyException(error_message, variable)
 
             if value is None:
                 break
@@ -372,14 +367,7 @@ class Padding(AbstractRelationVariableLeaf):
         padding_value = bitarray()
 
         length_to_pad = 0
-        if self.data_callback is not None:
-            if callable(self.data_callback):
-                data_to_extend = self.data_callback(size, self.modulo)
-                length_to_pad += len(data_to_extend)
-                padding_value.extend(data_to_extend)
-            else:
-                raise TypeError("Callback parameter is not callable.")
-        else:
+        if self.data_callback is None:
             # Compute length to pad
             mod = size % self.modulo
             length_to_pad = self.modulo - mod if mod > 0 else 0
@@ -397,7 +385,13 @@ class Padding(AbstractRelationVariableLeaf):
             while len(padding_value) < length_to_pad:
                 padding_value.extend(self.dataType.generate())
 
-        self._logger.debug("Computed padding for {}: '{}'".format(self, padding_value.tobytes()))
+        elif callable(self.data_callback):
+            data_to_extend = self.data_callback(size, self.modulo)
+            length_to_pad += len(data_to_extend)
+            padding_value.extend(data_to_extend)
+        else:
+            raise TypeError("Callback parameter is not callable.")
+        self._logger.debug(f"Computed padding for {self}: '{padding_value.tobytes()}'")
 
         # Save current value of length to pad for further usage in self.compareValue()
         self._current_length_to_pad = int(length_to_pad)

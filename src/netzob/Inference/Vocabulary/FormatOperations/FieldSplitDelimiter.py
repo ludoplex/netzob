@@ -183,17 +183,17 @@ class FieldSplitDelimiter(object):
         # Else, we add (2*len(splittedMessages)-1) fields
         newFields = []
         iField = -1
-        for i in range(len(splittedMessages)):
+        for splittedMessage_ in splittedMessages:
             iField += 1
 
-            fieldDomain = list()
+            fieldDomain = []
 
             # temporary set that hosts all the observed values to prevent useless duplicate ones
             observedValues = set()
             has_inserted_empty_value = False
 
             isEmptyField = True  # To avoid adding an empty field
-            for v in splittedMessages[i]:
+            for v in splittedMessage_:
                 if v != "" and v is not None:
                     isEmptyField = False
 
@@ -204,14 +204,17 @@ class FieldSplitDelimiter(object):
                     has_inserted_empty_value = True
 
             if not isEmptyField:
-                if has_inserted_empty_value:
-                    newField = Field(
+                newField = (
+                    Field(
                         domain=DomainFactory.normalizeDomain(Opt(fieldDomain)),
-                        name="Field-" + str(iField))
-                else:
-                    newField = Field(
+                        name=f"Field-{iField}",
+                    )
+                    if has_inserted_empty_value
+                    else Field(
                         domain=DomainFactory.normalizeDomain(fieldDomain),
-                        name="Field-" + str(iField))
+                        name=f"Field-{iField}",
+                    )
+                )
                 newField.encodingFunctions = list(
                     field.encodingFunctions.values())
                 newFields.append(newField)
@@ -219,7 +222,7 @@ class FieldSplitDelimiter(object):
 
             str_delimiter = TypeConverter.convert(delimiter.value, BitArray,
                                                   HexaString).decode('utf-8')
-            fieldName = "Field-sep-{}".format(str_delimiter)
+            fieldName = f"Field-sep-{str_delimiter}"
 
             newFields.append(
                 Field(domain=Opt(delimiter), name=fieldName))

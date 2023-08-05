@@ -199,15 +199,17 @@ class FieldOperations(object):
 
         for d in [field1.domain, field2.domain]:
             if not isinstance(d.dataType, Raw):
-                raise NotImplementedError("The datatype {} is not yet supported.".format(d.dataType.typeName))
+                raise NotImplementedError(
+                    f"The datatype {d.dataType.typeName} is not yet supported."
+                )
 
-        if not field1.domain.scope == field2.domain.scope:
+        if field1.domain.scope != field2.domain.scope:
             raise TypeError("The scope-values of both fields to merge are not the same.")
-        if not field1.domain.dataType.endianness == field2.domain.dataType.endianness:
+        if field1.domain.dataType.endianness != field2.domain.dataType.endianness:
             raise TypeError("The endianness of both fields to merge are not the same.")
-        if not field1.domain.dataType.sign == field2.domain.dataType.sign:
+        if field1.domain.dataType.sign != field2.domain.dataType.sign:
             raise TypeError("The signedness of both fields to merge are not the same.")
-        if not field1.domain.dataType.unitSize == field2.domain.dataType.unitSize:
+        if field1.domain.dataType.unitSize != field2.domain.dataType.unitSize:
             raise TypeError("The unitSize of both fields to merge are not the same.")
 
         # '_ASCII__nbChars': (None, None)
@@ -222,11 +224,8 @@ class FieldOperations(object):
         minsizes = []
         maxsizes = []
         for f in [field1, field2]:
-            if not f.domain.dataType.size is None:
-                sizes = []
-                for s in f.domain.dataType.size:
-                    if s is not None:
-                        sizes.append(s)
+            if f.domain.dataType.size is not None:
+                sizes = [s for s in f.domain.dataType.size if s is not None]
                 minsizes.append(min(sizes))
                 maxsizes.append(max(sizes))
         newDomain.dataType.size = (sum(minsizes) , sum(maxsizes))

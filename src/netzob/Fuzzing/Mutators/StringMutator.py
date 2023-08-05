@@ -181,15 +181,16 @@ class StringMutator(DomainMutator):
         FuzzingMode.GENERATE
 
         """
-        m = StringMutator(self.domain,
-                          mode=self.mode,
-                          generator=self.generator,
-                          seed=self.seed,
-                          counterMax=self.counterMax,
-                          naughtyStrings=self.naughtyStrings,
-                          endChar=self.endChar,
-                          lengthBitSize=self.lengthBitSize)
-        return m
+        return StringMutator(
+            self.domain,
+            mode=self.mode,
+            generator=self.generator,
+            seed=self.seed,
+            counterMax=self.counterMax,
+            naughtyStrings=self.naughtyStrings,
+            endChar=self.endChar,
+            lengthBitSize=self.lengthBitSize,
+        )
 
     def count(self):
         r"""
@@ -237,35 +238,30 @@ class StringMutator(DomainMutator):
             super().generate()
 
         if self.mode == FuzzingMode.FIXED:
-            valueBytes = next(self.generator)
-        else:
+            return next(self.generator)
+        # Choose the string to mutate
+        index = next(self.generator)
+        value = self.naughtyStrings[index] + self.endChar
 
-            # Choose the string to mutate
-            index = next(self.generator)
-            value = self.naughtyStrings[index] + self.endChar
-
-            # Generate length of random data
-            length = next(self._lengthGenerator)
+        # Generate length of random data
+        length = next(self._lengthGenerator)
 
             # Adapt the initial value according to the final length
-            if length > 0:
-                if length > len(value):
-                    # Complete the string with padding characters to have the good
-                    # length
-                    value = value + (" " * (length - len(value)))
-                else:
-                    # truncate the too long string value to length characters
-                    value = value[:length - 1] + self.endChar
-            else:
-                value = ""
-            valueData = value.encode('utf-8')
-            valueBytes = String.decode(valueData,
-                                       unitSize=self.domain.dataType.unitSize,
-                                       endianness=self.domain.dataType.endianness,
-                                       sign=self.domain.dataType.sign)
-
-        # Conversion
-        return valueBytes
+        if length > 0:
+            value = (
+                value + (" " * (length - len(value)))
+                if length > len(value)
+                else value[: length - 1] + self.endChar
+            )
+        else:
+            value = ""
+        valueData = value.encode('utf-8')
+        return String.decode(
+            valueData,
+            unitSize=self.domain.dataType.unitSize,
+            endianness=self.domain.dataType.endianness,
+            sign=self.domain.dataType.sign,
+        )
 
     def mutate(self, data):
         raise NotImplementedError

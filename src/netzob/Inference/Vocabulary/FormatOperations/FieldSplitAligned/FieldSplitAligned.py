@@ -200,7 +200,7 @@ class FieldSplitAligned(object):
                 for message, values in list(messageValues.items())
             ]
 
-        if len(list(messageValues.values())) == 0:
+        if not list(messageValues.values()):
             return
 
         # Execute the alignement
@@ -251,7 +251,7 @@ class FieldSplitAligned(object):
 
         for (entryVal, entryDyn) in splited:
             if entryDyn:
-                newField = Field(Raw(nbBytes=(0, int(len(entryVal) / 2))))
+                newField = Field(Raw(nbBytes=(0, len(entryVal) // 2)))
             else:
                 newField = Field(
                     Raw(TypeConverter.convert(entryVal, HexaString, Raw)))
@@ -299,8 +299,8 @@ class FieldSplitAligned(object):
             return ([[chr(align[0]), chr(align[0]) == "-"]],
                     [[chr(align[1]), chr(align[1]) == "-"]])
 
-        indexHalf = int(len(align) / 2)
-        leftAlign = align[0:indexHalf]
+        indexHalf = len(align) // 2
+        leftAlign = align[:indexHalf]
         rightAlign = align[indexHalf:]
 
         leftLeftAlign, rightLeftAlign = self._splitAlignment(leftAlign)
@@ -316,12 +316,10 @@ class FieldSplitAligned(object):
             return rightAlign
         if len(rightAlign) == 0:
             return leftAlign
-        if leftAlign[-1][1] == rightAlign[0][1]:
-            leftAlign[-1][0] = leftAlign[-1][0] + rightAlign[0][0]
-            align = leftAlign + rightAlign[1:]
-        else:
-            align = leftAlign + rightAlign
-        return align
+        if leftAlign[-1][1] != rightAlign[0][1]:
+            return leftAlign + rightAlign
+        leftAlign[-1][0] = leftAlign[-1][0] + rightAlign[0][0]
+        return leftAlign + rightAlign[1:]
 
     # def _temp(self, align):
     #     self._logger.debug("Align = {0}".format(align))
@@ -381,7 +379,7 @@ class FieldSplitAligned(object):
                 )
 
         if semanticTags is None:
-            semanticTags = [OrderedDict() for v in values]
+            semanticTags = [OrderedDict() for _ in values]
 
         if len(semanticTags) != len(values):
             raise TypeError(
@@ -594,7 +592,6 @@ class FieldSplitAligned(object):
                         b"(.{" + str(minValue) + b"," + str(maxValue) + b"})",
                         field.getSymbol())
 
-                    field.addLocalField(subField)
                 else:
                     # create regex based on unique values
                     newRegex = '|'.join(list(set(values)))
@@ -602,7 +599,8 @@ class FieldSplitAligned(object):
                     subField = Field(b"{0}_{1}".format(field.getName(),
                                                        iSubField), newRegex,
                                      field.getSymbol())
-                    field.addLocalField(subField)
+
+                field.addLocalField(subField)
 
     @typeCheck(AbstractField, dict, str)
     def _getFieldValuesWithTag(self, field, semanticTagsForEachMessage, tag):
@@ -654,18 +652,13 @@ class FieldSplitAligned(object):
         result = OrderedDict()
         arTags = tags.split(';')
         j = 0
-        for iTag, tag in enumerate(arTags):
-            if tag != b"None":
-                result[j] = tag[2:-2]
-            else:
-                result[j] = tag
-
-            if unitSize == UnitSize.SIZE_8:
-                j = j + 1
-                result[j] = result[j - 1]
-            else:
+        for tag in arTags:
+            result[j] = tag[2:-2] if tag != b"None" else tag
+            if unitSize != UnitSize.SIZE_8:
                 raise ValueError("Unsupported unitsize.")
 
+            j = j + 1
+            result[j] = result[j - 1]
             j += 1
 
         return result
@@ -682,27 +675,26 @@ class FieldSplitAligned(object):
         @param unitSize the unitSize
         @returns the python alignment
         """
-        if not (unitSize == UnitSize.SIZE_8 or
-                unitSize == UnitSize.SIZE_4):
+        if unitSize not in [UnitSize.SIZE_8, UnitSize.SIZE_4]:
             raise ValueError(
                 "Deserializing with unitSize {0} not yet implemented, only 4 and 8 supported.".
                 format(unitSize))
 
         align = b""
         for i, c in enumerate(mask):
-            if c != 2:
-                if c == 1:
-                    if unitSize == UnitSize.SIZE_8:
-                        align += b"--"
-                    elif unitSize == UnitSize.SIZE_4:
-                        align += b"-"
-                else:
-                    if unitSize == UnitSize.SIZE_8:
-                        align += TypeConverter.convert(regex[i:i + 1], Raw,
-                                                       HexaString)
-                    elif unitSize == UnitSize.SIZE_4:
-                        align += TypeConverter.convert(regex[i:i + 1], Raw,
-                                                       HexaString)[1:]
+            if c == 1:
+                if unitSize == UnitSize.SIZE_8:
+                    align += b"--"
+                elif unitSize == UnitSize.SIZE_4:
+                    align += b"-"
+            elif c == 2:
+                pass
+            elif unitSize == UnitSize.SIZE_8:
+                align += TypeConverter.convert(regex[i:i + 1], Raw,
+                                               HexaString)
+            elif unitSize == UnitSize.SIZE_4:
+                align += TypeConverter.convert(regex[i:i + 1], Raw,
+                                               HexaString)[1:]
         return align
 
     @property

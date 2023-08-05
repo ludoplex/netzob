@@ -82,25 +82,19 @@ class DomainEncodingFunction(EncodingFunction):
         if not readingToken.isValueForVariableAvailable(variable):
             return result
 
-        if variable.varType == "Data" or variable.varType == "Size" or variable.varType == "InternetChecksum":
+        if variable.varType in ["Data", "Size", "InternetChecksum"]:
             val = readingToken.getValueForVariable(variable)
             encodedVal = TypeConverter.convert(val, BitArray,
                                                variable.dataType.__class__)
             result.append(str(encodedVal))
-        elif variable.varType == "Agg" or variable.varType == "Alt":
+        elif variable.varType in ["Agg", "Alt"]:
             for child in variable.children:
                 result.extend(self.encodeChild(child, readingToken))
-        elif variable.varType == "Eol":
-            # nothing to encode when child is EOL
-            pass
-        else:
+        elif variable.varType != "Eol":
             raise Exception(
                 "Unknown type of variable: {0}".format(variable.varType))
 
-        if len(result) == 0:
-            return ''
-        else:
-            return ''.join(result)
+        return '' if not result else ''.join(result)
 
     def priority(self):
         """Returns the priority of the current encoding filter."""

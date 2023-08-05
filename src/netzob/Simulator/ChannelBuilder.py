@@ -88,13 +88,14 @@ class ChannelBuilder(object):
         :param value: any object
         :type value: object, required
         """
-        setter_name = "set_{}".format(key)
+        setter_name = f"set_{key}"
         setter = getattr(self, setter_name, None)
         if callable(setter):
             setter(value)
         else:
-            self._logger.debug("The setter '{}' is not provided by {}"
-                               .format(setter_name, type(self).__name__))
+            self._logger.debug(
+                f"The setter '{setter_name}' is not provided by {type(self).__name__}"
+            )
         return self
 
     @public_api

@@ -169,8 +169,7 @@ class DataAlignment(object):
                 # now we apply encoding and mathematic functions
                 fieldValue = alignedMsg[ifield]
 
-                if self.encoded and len(
-                        list(currentField.encodingFunctions.values())) > 0:
+                if self.encoded and list(currentField.encodingFunctions.values()):
                     for encodingFunction in list(
                             currentField.encodingFunctions.values()):
                         fieldValue = encodingFunction.encode(fieldValue)
@@ -230,8 +229,8 @@ class DataAlignment(object):
                 val.append(d)
             else:
                 raise Exception(
-                    "Invalid type, data can only be a str or a bytes not {}: {}".
-                    format(type(data), d))
+                    f"Invalid type, data can only be a str or a bytes not {type(data)}: {d}"
+                )
         self.__data = val
 
     @property

@@ -334,7 +334,9 @@ class Integer(AbstractType):
         # Validate uniSize
         valid_unitSizes = [UnitSize.SIZE_8, UnitSize.SIZE_16, UnitSize.SIZE_24, UnitSize.SIZE_32, UnitSize.SIZE_64]
         if unitSize not in valid_unitSizes:
-            raise ValueError("unitSize parameter should be one of '{}', but not '{}'".format(valid_unitSizes, str(unitSize)))
+            raise ValueError(
+                f"unitSize parameter should be one of '{valid_unitSizes}', but not '{str(unitSize)}'"
+            )
 
         # Convert value to bitarray
         if value is not None and not isinstance(value, bitarray):
@@ -343,7 +345,7 @@ class Integer(AbstractType):
 
             # Check if value is correct
             if not isinstance(value, int):
-                raise ValueError("Input value shoud be a integer. Value received: '{}'".format(value))
+                raise ValueError(f"Input value shoud be a integer. Value received: '{value}'")
 
             value = TypeConverter.convert(
                 value,
@@ -363,7 +365,9 @@ class Integer(AbstractType):
 
             # Check if default value is correct
             if not isinstance(default, int):
-                raise ValueError("Input default value shoud be a integer. Default value received: '{}'".format(default))
+                raise ValueError(
+                    f"Input default value shoud be a integer. Default value received: '{default}'"
+                )
 
             default = TypeConverter.convert(
                 default,
@@ -397,12 +401,10 @@ class Integer(AbstractType):
     def __str__(self):
         if self.value is not None:
             return "{}({})".format(self.typeName, Integer.encode(self.value.tobytes(), unitSize=self.unitSize, endianness=self.endianness, sign=self.sign))
-        else:
-            if self.size[0] == self.size[1]:
-                self._logger.fatal("PAN")
-                return "{}(interval={})".format(self.typeName, self.size[0])
-            else:
-                return "{}({},{})".format(self.typeName, self.size[0], self.size[1])
+        if self.size[0] != self.size[1]:
+            return f"{self.typeName}({self.size[0]},{self.size[1]})"
+        self._logger.fatal("PAN")
+        return f"{self.typeName}(interval={self.size[0]})"
 
     def _normalizeInterval(self, interval, unitSize, sign):
 
@@ -412,7 +414,9 @@ class Integer(AbstractType):
             interval = (interval, interval)
         else:
             if not (isinstance(interval, tuple) and len(interval) == 2):
-                raise ValueError("Input interval shoud be a tuple of two integers. Value received: '{}'".format(interval))
+                raise ValueError(
+                    f"Input interval shoud be a tuple of two integers. Value received: '{interval}'"
+                )
 
             if not isinstance(interval[0], int):
                 raise TypeError("First element of interval should be an integer")
@@ -431,7 +435,9 @@ class Integer(AbstractType):
 
         if ((interval[0] is not None and interval[0] < min_interval) or
             (interval[1] is not None and interval[1] > max_interval)):
-            raise ValueError("Specified interval '{}' does not fit in specified unitSize '{}'".format(interval, unitSize))
+            raise ValueError(
+                f"Specified interval '{interval}' does not fit in specified unitSize '{unitSize}'"
+            )
 
         # Reset min and max values if a valid interval is provided
         if interval[0] is not None:
@@ -463,26 +469,21 @@ class Integer(AbstractType):
 
         """
 
-        if self.value is not None:
-            return 1
-        else:
-            return self.getMaxValue() - self.getMinValue() + 1
+        return self.getMaxValue() - self.getMinValue() + 1 if self.value is None else 1
 
     def getMinValue(self):
         if self.value is None:
             return self.size[0]
-        else:
-            from netzob.Model.Vocabulary.Types.TypeConverter import TypeConverter
-            from netzob.Model.Vocabulary.Types.BitArray import BitArray
-            return TypeConverter.convert(self.value, BitArray, Integer, dst_unitSize=self.unitSize, dst_endianness=self.endianness, dst_sign=self.sign)
+        from netzob.Model.Vocabulary.Types.TypeConverter import TypeConverter
+        from netzob.Model.Vocabulary.Types.BitArray import BitArray
+        return TypeConverter.convert(self.value, BitArray, Integer, dst_unitSize=self.unitSize, dst_endianness=self.endianness, dst_sign=self.sign)
 
     def getMaxValue(self):
         if self.value is None:
             return self.size[1]
-        else:
-            from netzob.Model.Vocabulary.Types.TypeConverter import TypeConverter
-            from netzob.Model.Vocabulary.Types.BitArray import BitArray
-            return TypeConverter.convert(self.value, BitArray, Integer, dst_unitSize=self.unitSize, dst_endianness=self.endianness, dst_sign=self.sign)
+        from netzob.Model.Vocabulary.Types.TypeConverter import TypeConverter
+        from netzob.Model.Vocabulary.Types.BitArray import BitArray
+        return TypeConverter.convert(self.value, BitArray, Integer, dst_unitSize=self.unitSize, dst_endianness=self.endianness, dst_sign=self.sign)
 
     def getMinStorageValue(self):
         return getMinStorageValue(self.unitSize, self.sign)
@@ -539,13 +540,13 @@ class Integer(AbstractType):
             return False
 
         # Convert data to bitarray
-        if data is not None and not isinstance(data, bitarray):
+        if not isinstance(data, bitarray):
             from netzob.Model.Vocabulary.Types.TypeConverter import TypeConverter
             from netzob.Model.Vocabulary.Types.BitArray import BitArray
 
             # Check if data is correct
             if not isinstance(data, int):
-                raise ValueError("Input data shoud be a integer. Data received: '{}'".format(data))
+                raise ValueError(f"Input data shoud be a integer. Data received: '{data}'")
 
             data = TypeConverter.convert(
                 data,
@@ -580,8 +581,9 @@ class Integer(AbstractType):
 
             return minSize <= int_data <= maxSize
 
-        raise Exception("Cannot parse this data '{}' because no domain is "
-                        "expected.".format(data))
+        raise Exception(
+            f"Cannot parse this data '{data}' because no domain is expected."
+        )
 
     @staticmethod
     def decode(data,
@@ -644,11 +646,7 @@ class Integer(AbstractType):
 
         # Special case for 24 bits integers
         if unitSize == UnitSize.SIZE_24:
-            if endianness == Endianness.BIG:
-                data = data[1:]
-            else:
-                data = data[:-1]
-
+            data = data[1:] if endianness == Endianness.BIG else data[:-1]
         return data
 
     @staticmethod
@@ -736,9 +734,9 @@ class Integer(AbstractType):
             # Pad with null bytes to statisfy the unitSize.
             if padding_nullbytes > 0 and i == (end - inc):
                 if endianness == Endianness.BIG:
-                    wordData = b'\x00' * int(padding_nullbytes) + wordData
+                    wordData = b'\x00' * padding_nullbytes + wordData
                 elif endianness == Endianness.LITTLE:
-                    wordData += b'\x00' * int(padding_nullbytes)
+                    wordData += b'\x00' * padding_nullbytes
                 else:
                     raise ValueError(
                         "Invalid endianness value: {0}".format(endianness))
@@ -776,7 +774,7 @@ class Integer(AbstractType):
                 "Invalid endianness value: {0}".format(endianness))
 
         # unitSize
-        if unitSize == UnitSize.SIZE_8 or unitSize == UnitSize.SIZE_4:
+        if unitSize in [UnitSize.SIZE_8, UnitSize.SIZE_4]:
             unitFormat = 'b'
         elif unitSize == UnitSize.SIZE_16:
             unitFormat = 'h'
@@ -841,18 +839,15 @@ class Integer(AbstractType):
 
 
 def getMinStorageValue(unitSize, sign):
-    if sign == Sign.UNSIGNED:
-        return 0
-    else:
-        return -int((2**int(unitSize.value)) / 2)
+    return 0 if sign == Sign.UNSIGNED else -int((2**int(unitSize.value)) / 2)
 
 
 def getMaxStorageValue(unitSize, sign):
-    if sign == Sign.UNSIGNED:
-        d = (1 << unitSize.value) - 1
-    else:
-        d = int((1 << unitSize.value) / 2) - 1
-    return d
+    return (
+        (1 << unitSize.value) - 1
+        if sign == Sign.UNSIGNED
+        else int((1 << unitSize.value) / 2) - 1
+    )
 
 
 int8be = partialclass(Integer,

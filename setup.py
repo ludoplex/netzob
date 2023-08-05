@@ -70,13 +70,8 @@ def opj(*args):
 #        -mno-sse2, -mno-3dnow, -fno-dwarf2-cfi-asm
 #
 
-compileProfile = "release"
-
 NETZOB_COMPILE_PROFILE_ENV = "NETZOB_COMPILE_PROFILE"
-# extract requested mode from the environment variable
-if NETZOB_COMPILE_PROFILE_ENV in os.environ.keys():
-    compileProfile = os.environ[NETZOB_COMPILE_PROFILE_ENV]
-
+compileProfile = os.environ.get(NETZOB_COMPILE_PROFILE_ENV, "release")
 # Default compile arguments
 extraCompileArgs = ["-std=c99"]
 if "no-verify" not in compileProfile:

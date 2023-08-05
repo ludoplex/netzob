@@ -131,14 +131,8 @@ class AbstractType(object, metaclass=abc.ABCMeta):
     def getUnitSizeEnum(size):
         """Returns the enum value corresponding to the given size.
         If size is invalid, returns None."""
-        if size == 1:
+        if size in [1, 4]:
             return UnitSize.SIZE_1
-        elif size == 4:
-            return UnitSize.SIZE_1
-        elif size == 4:
-            return UnitSize.SIZE_4
-        elif size == 8:
-            return UnitSize.SIZE_8
         elif size == 16:
             return UnitSize.SIZE_16
         elif size == 24:
@@ -147,6 +141,8 @@ class AbstractType(object, metaclass=abc.ABCMeta):
             return UnitSize.SIZE_32
         elif size == 64:
             return UnitSize.SIZE_64
+        elif size == 8:
+            return UnitSize.SIZE_8
         return None
 
     @staticmethod
@@ -210,25 +206,19 @@ class AbstractType(object, metaclass=abc.ABCMeta):
         self.size = size
 
         # Compute unit size (i.e. the size used to store the length attribute of the current object)
-        if self.value is None:
-            value_length = 0
-        else:
-            value_length = len(self.value)
-        if self.size[1] is None:
-            size_max = 0
-        else:
-            size_max = self.size[1]
-
+        value_length = 0 if self.value is None else len(self.value)
+        size_max = 0 if self.size[1] is None else self.size[1]
         unitSize_tmp = AbstractType.computeUnitSize(max(value_length, size_max))  # Compute unit size according to the maximum length
 
         # Check consistency of provided unitSize value according to the computed one
         if unitSize is None:
             self.unitSize = unitSize_tmp
+        elif unitSize.value < unitSize_tmp.value:
+            raise ValueError(
+                f"Provided unitSize '{unitSize}' is too small to encode the maximum length of the potential values to generate (unitSize should be: '{unitSize_tmp}')"
+            )
         else:
-            if unitSize.value < unitSize_tmp.value:
-                raise ValueError("Provided unitSize '{}' is too small to encode the maximum length of the potential values to generate (unitSize should be: '{}')".format(unitSize, unitSize_tmp))
-            else:
-                self.unitSize = unitSize
+            self.unitSize = unitSize
 
         # Handle default attribute
         self.default = default
@@ -237,27 +227,22 @@ class AbstractType(object, metaclass=abc.ABCMeta):
         from netzob.Model.Vocabulary.Types.TypeConverter import TypeConverter
         from netzob.Model.Vocabulary.Types.BitArray import BitArray
         if self.value is not None:
-            return "{}={}".format(
-                self.typeName,
-                TypeConverter.convert(self.value, BitArray,
-                                      self.__class__))
+            return f"{self.typeName}={TypeConverter.convert(self.value, BitArray, self.__class__)}"
+        if self.size[0] == self.size[1]:
+            return f"{self.typeName}(nbBits={self.size[0]})"
         else:
-            if self.size[0] == self.size[1]:
-                return "{}(nbBits={})".format(self.typeName, self.size[0])
-            else:
-                return "{}(nbBits=({},{})".format(self.typeName, self.size[0], self.size[1])
+            return f"{self.typeName}(nbBits=({self.size[0]},{self.size[1]})"
 
     def __repr__(self):
-        if self.value is not None:
-            from netzob.Model.Vocabulary.Types.TypeConverter import TypeConverter
-            from netzob.Model.Vocabulary.Types.BitArray import BitArray
-            return str(
-                TypeConverter.convert(self.value, BitArray, self.__class__,
-                                      dst_unitSize=self.unitSize,
-                                      dst_endianness=self.endianness,
-                                      dst_sign=self.sign))
-        else:
+        if self.value is None:
             return str(self.value)
+        from netzob.Model.Vocabulary.Types.TypeConverter import TypeConverter
+        from netzob.Model.Vocabulary.Types.BitArray import BitArray
+        return str(
+            TypeConverter.convert(self.value, BitArray, self.__class__,
+                                  dst_unitSize=self.unitSize,
+                                  dst_endianness=self.endianness,
+                                  dst_sign=self.sign))
 
     def __key(self):
         # Note: as bitarray objects cannot be hashed in Python3 (because bitarray objects are mutable), we cast a bitarray object in a tuple (which is immutable)
@@ -268,8 +253,8 @@ class AbstractType(object, metaclass=abc.ABCMeta):
             return (self.typeName, tuple(self.value), self.size, self.unitSize,
                     self.endianness, self.sign)
 
-    def __eq__(x, y):
-        return x.__key() == y.__key()
+    def __eq__(self, y):
+        return self.__key() == y.__key()
 
     def __hash__(self):
         return hash(self.__key())
@@ -379,7 +364,7 @@ class AbstractType(object, metaclass=abc.ABCMeta):
             maxSize = AbstractType.MAXIMUM_GENERATED_DATA_SIZE
 
         generatedSize = random.randint(minSize, maxSize)
-        randomContent = [random.randint(0, 1) for i in range(0, generatedSize)]
+        randomContent = [random.randint(0, 1) for _ in range(0, generatedSize)]
         return bitarray(randomContent)
 
     @staticmethod
@@ -457,7 +442,7 @@ class AbstractType(object, metaclass=abc.ABCMeta):
 
         # Deduce unit size according to max possible length
         if length > (1 << UnitSize.SIZE_64.value):
-            raise Exception("Maximum length for datatype is too large: '{}'".format(length))
+            raise Exception(f"Maximum length for datatype is too large: '{length}'")
         elif length > (1 << UnitSize.SIZE_32.value):
             unit_size = UnitSize.SIZE_64
         elif length > (1 << UnitSize.SIZE_24.value):
@@ -513,11 +498,7 @@ class AbstractType(object, metaclass=abc.ABCMeta):
         mutations = collections.OrderedDict()
 
         # If no value is known, we generate a new one
-        if self.value is None:
-            val = self.generate()
-        else:
-            val = self.value
-
+        val = self.generate() if self.value is None else self.value
         if self.endianness == Endianness.LITTLE:
             mutations["{0}bits(littleEndian)".format(prefixDescription)] = val
             bigEndianValue = bitarray(val, endian=Endianness.BIG.value)
@@ -635,35 +616,34 @@ class AbstractType(object, metaclass=abc.ABCMeta):
         elif isinstance(size, int):
             size = (size, size)
 
-        if isinstance(size, tuple):
-            minSize, maxSize = size
-
-            if minSize is None:
-                minSize = 0
-
-            if maxSize is None:
-                maxSize = AbstractType.MAXIMUM_GENERATED_DATA_SIZE
-
-            if minSize is not None and not isinstance(minSize, int):
-                raise TypeError("Size must be defined with a tuple of integers")
-
-            if maxSize is not None and not isinstance(maxSize, int):
-                raise TypeError("Size must be defined with a tuple of integers")
-
-            if self.sign == Sign.UNSIGNED:
-                if minSize < 0 or maxSize < 0:
-                    raise TypeError("Size must be defined with a tuple of positive integers")
-
-                if minSize == maxSize == 0:
-                    raise TypeError("Size must be defined with a tuple of integers that cannot be both equal to zero")
-
-            if maxSize < minSize:
-                raise TypeError("Size must be defined with a tuple of integers, where the second value is greater than the first value")
-
-            self.__size = (minSize, maxSize)
-        else:
+        if not isinstance(size, tuple):
             raise TypeError(
                 "Size must be defined by a tuple an int or with None")
+        minSize, maxSize = size
+
+        if minSize is None:
+            minSize = 0
+
+        if maxSize is None:
+            maxSize = AbstractType.MAXIMUM_GENERATED_DATA_SIZE
+
+        if minSize is not None and not isinstance(minSize, int):
+            raise TypeError("Size must be defined with a tuple of integers")
+
+        if maxSize is not None and not isinstance(maxSize, int):
+            raise TypeError("Size must be defined with a tuple of integers")
+
+        if self.sign == Sign.UNSIGNED:
+            if minSize < 0 or maxSize < 0:
+                raise TypeError("Size must be defined with a tuple of positive integers")
+
+            if minSize == maxSize == 0:
+                raise TypeError("Size must be defined with a tuple of integers that cannot be both equal to zero")
+
+        if maxSize < minSize:
+            raise TypeError("Size must be defined with a tuple of integers, where the second value is greater than the first value")
+
+        self.__size = (minSize, maxSize)
 
     @property
     def default(self):
@@ -679,7 +659,9 @@ class AbstractType(object, metaclass=abc.ABCMeta):
     def default(self, default):
         if default is not None:
             if not self.canParse(default):
-                raise ValueError("Cannot set a default Type value (here '{}') that cannot be parsed (current type: {})".format(default.tobytes(), self))
+                raise ValueError(
+                    f"Cannot set a default Type value (here '{default.tobytes()}') that cannot be parsed (current type: {self})"
+                )
         self.__default = default
 
     @staticmethod
@@ -750,11 +732,7 @@ class AbstractType(object, metaclass=abc.ABCMeta):
 
         scope = None
 
-        if self.value is not None:
-            scope = Scope.CONSTANT
-        else:
-            scope = Scope.NONE
-
+        scope = Scope.CONSTANT if self.value is not None else Scope.NONE
         return Data(dataType=self, scope=scope)
 
     def getFixedBitSize(self):
@@ -772,8 +750,7 @@ class AbstractType(object, metaclass=abc.ABCMeta):
             return len(self.value)
         elif any(self.size) and self.size[0] == self.size[1]:
             return self.size[0]
-        raise ValueError("Cannot determine a fixed size for type '{}'"
-                         .format(self))
+        raise ValueError(f"Cannot determine a fixed size for type '{self}'")
 
     @property
     def typeName(self):
@@ -878,7 +855,7 @@ def test_type_one_parameter(data_type, possible_parameters):
                 data_type(**parameters)
             except Exception as e:
                 print(parameters)
-                print("Exception when creating a datatype with one parameter: '{}'".format(e))
+                print(f"Exception when creating a datatype with one parameter: '{e}'")
         functional_possible_parameters[parameter_name] = functional_parameter_contents
 
 
@@ -902,7 +879,7 @@ def test_type_multiple_parameters(data_type, possible_parameters):
         except Exception as e:
             if "should have either" not in str(e):  # Handle mutually exclusive parameter types
                 print(parameters)
-                print("Exception when creating a datatype with multiple parameters: '{}'".format(e))
+                print(f"Exception when creating a datatype with multiple parameters: '{e}'")
         else:
             functional_combinations_possible_parameters.append(current_combination)
 

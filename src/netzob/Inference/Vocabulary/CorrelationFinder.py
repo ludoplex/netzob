@@ -140,11 +140,11 @@ class CorrelationFinder(object):
                     relation_type = self._findRelationType(x_attribute,
                                                            y_attribute)
                     self._debug_mine_stats(mine)
-                    self._logger.debug("Correlation found between '" + str(
-                        x_fields) + ":" + x_attribute + "' and '" + str(
-                            y_fields) + ":" + y_attribute + "'")
-                    self._logger.debug("  MIC score: " + str(mic))
-                    self._logger.debug("  Pearson score: " + str(pearson))
+                    self._logger.debug(
+                        f"Correlation found between '{str(x_fields)}:{x_attribute}' and '{str(y_fields)}:{y_attribute}'"
+                    )
+                    self._logger.debug(f"  MIC score: {str(mic)}")
+                    self._logger.debug(f"  Pearson score: {str(pearson)}")
                     id_relation = str(uuid.uuid4())
                     symbolResults.append({
                         'id': id_relation,
@@ -159,11 +159,11 @@ class CorrelationFinder(object):
         return symbolResults
 
     def _debug_mine_stats(self, mine):
-        self._logger.debug("MIC: " + str(mine.mic()))
-        self._logger.debug("MAS: " + str(mine.mas()))
-        self._logger.debug("MEV: " + str(mine.mev()))
-        self._logger.debug("MCN (eps=0): " + str(mine.mcn(0)))
-        self._logger.debug("MCN (eps=1-MIC): " + str(mine.mcn_general()))
+        self._logger.debug(f"MIC: {str(mine.mic())}")
+        self._logger.debug(f"MAS: {str(mine.mas())}")
+        self._logger.debug(f"MEV: {str(mine.mev())}")
+        self._logger.debug(f"MCN (eps=0): {str(mine.mcn(0))}")
+        self._logger.debug(f"MCN (eps=1-MIC): {str(mine.mcn_general())}")
 
     def _findRelationType(self, x_attribute, y_attribute):
         typeRelation = "Unknown"
@@ -171,7 +171,7 @@ class CorrelationFinder(object):
             ) or (x_attribute == self.ATTR_SIZE and
                   y_attribute == self.ATTR_VALUE):
             typeRelation = self.REL_SIZE
-        elif (x_attribute == x_attribute) and x_attribute == self.ATTR_VALUE:
+        elif x_attribute == x_attribute == self.ATTR_VALUE:
             typeRelation = self.REL_DATA
         return typeRelation
 
@@ -180,12 +180,10 @@ class CorrelationFinder(object):
         lines_data = []
         line_header = []
 
-        # Compute the table of values
-        valuesTable = []
         fields = symbol.fields
-        for field in fields:
-            valuesTable.append(field.getValues(encoded=False, styled=False))
-
+        valuesTable = [
+            field.getValues(encoded=False, styled=False) for field in fields
+        ]
         # Compute the table of concatenation of values
         for i in range(len(fields[:])):
             for j in range(i + 1, len(fields) + 1):
@@ -225,7 +223,7 @@ class CorrelationFinder(object):
 
         if len(cellsDataList) < 1:
             return []
-        result = [b"" for cell in cellsDataList[0]]
+        result = [b"" for _ in cellsDataList[0]]
         for cellsData in cellsDataList:
             for i, data in enumerate(cellsData):
                 result[i] += data
@@ -239,7 +237,7 @@ class CorrelationFinder(object):
                 # we need to add 0 padding at the front of the raw numbers
                 if len(data) == 3:
                     data = b'\x00' + data
-                elif len(data) in (5,6,7):
+                elif len(data) in {5, 6, 7}:
                     padding_length = 8 - len(data)
                     data = padding_length *  b'\x00' + data
                 result.append(TypeConverter.convert(
@@ -258,23 +256,21 @@ class CorrelationFinder(object):
         return result
 
     def _generateCRC32(self, symbol):
-        header = []
         lines = []
-        header.append(self.ATTR_CRC32)
+        header = [self.ATTR_CRC32]
         messages = symbol.getMessages()
         for message in messages:
-            line = []
             data = message.getStringData()
             rawContent = TypeConverter.netzobRawToPythonRaw(data)
             valCrc32 = zlib.crc32(rawContent) & 0xFFFFFFFF
-            line.append(str(valCrc32))
+            line = [str(valCrc32)]
             lines.append(b",".join(line))
         return (header, lines)
 
     def _generateSizeFieldFromBeginingOfField(self, symbol):
         header = []
         lines = []
-        cells = dict()
+        cells = {}
         fields = symbol.fields
         for field in fields:
             if not field.isStatic():

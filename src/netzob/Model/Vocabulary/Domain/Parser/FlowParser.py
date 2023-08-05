@@ -164,10 +164,7 @@ class FlowParser(object):
     """
 
     def __init__(self, memory=None):
-        if memory is None:
-            self.memory = Memory()
-        else:
-            self.memory = memory
+        self.memory = Memory() if memory is None else memory
 
     @typeCheck(AbstractMessage, list)
     def parseFlow(self, message, symbols):
@@ -189,7 +186,9 @@ class FlowParser(object):
         for result in self._parseFlow_internal(data_to_parse_bitarray, symbols, self.memory):
             return result
 
-        raise InvalidParsingPathException("No parsing path returned while parsing '{}'".format(repr(data_to_parse_raw)))
+        raise InvalidParsingPathException(
+            f"No parsing path returned while parsing '{repr(data_to_parse_raw)}'"
+        )
 
     def _parseFlow_internal(self, data_to_parse_bitarray, symbols, memory):
         """Parses the specified data"""
@@ -198,32 +197,31 @@ class FlowParser(object):
             raise Exception("Nothing to parse")
 
         for symbol in symbols:
-            self._logger.debug("Parsing '{}' with Symbol '{}'".format(data_to_parse_bitarray.tobytes(), symbol.name))
+            self._logger.debug(
+                f"Parsing '{data_to_parse_bitarray.tobytes()}' with Symbol '{symbol.name}'"
+            )
             flow_parsing_results = []
             try:
                 mp = MessageParser(memory=memory)
                 results = mp.parseBitarray(data_to_parse_bitarray.copy(), symbol.getLeafFields(), must_consume_everything=False)
 
                 for parse_result in results:
-                    parse_result_len = sum([len(value) for value in parse_result])
+                    parse_result_len = sum(len(value) for value in parse_result)
 
                     remainings_bitarray = data_to_parse_bitarray[parse_result_len:]
 
                     if len(remainings_bitarray) > 0:
-                        self._logger.debug("Try to parse the remaining data '{}' with another symbol".format(remainings_bitarray.tobytes()))
+                        self._logger.debug(
+                            f"Try to parse the remaining data '{remainings_bitarray.tobytes()}' with another symbol"
+                        )
                         try:
                             child_flow_parsings = self._parseFlow_internal(remainings_bitarray, symbols, memory.copy())
                             for child_flow_parsing in child_flow_parsings:
-                                flow_parsing_results = [(symbol, parse_result)] + child_flow_parsing
-
-                                yield flow_parsing_results
+                                yield [(symbol, parse_result)] + child_flow_parsing
                         except InvalidParsingPathException:
                             pass
                     else:
-                        flow_parsing_results = [(symbol, parse_result)]
-
-                        yield flow_parsing_results
-
+                        yield [(symbol, parse_result)]
             except InvalidParsingPathException:
                 # XXX: Do we really want to silently bypass this exception ?
                 pass

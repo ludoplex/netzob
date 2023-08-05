@@ -54,30 +54,22 @@ class SpecializingPath(GenericPath):
             dataAssignedToVariable=dataAssignedToVariable,
             variablesCallbacks=variablesCallbacks)
 
-        if ok is None:
-            self.__ok = True
-        else:
-            self.__ok = ok
+        self.__ok = True if ok is None else ok
 
     def copy(self):
-        dVariable = {}
-        for key, value in list(self._dataAssignedToVariable.items()):
-            dVariable[key] = value.copy()
+        dVariable = {
+            key: value.copy()
+            for key, value in list(self._dataAssignedToVariable.items())
+        }
+        fCall = list(self._variablesCallbacks)
 
-        fCall = [x for x in self._variablesCallbacks]
-
-        if self.memory is not None:
-            memory = self.memory
-        else:
-            memory = None
-            
-        result = SpecializingPath(
+        memory = self.memory if self.memory is not None else None
+        return SpecializingPath(
             memory=memory,
             dataAssignedToVariable=dVariable,
             variablesCallbacks=fCall,
-            ok=self.ok)
-
-        return result
+            ok=self.ok,
+        )
 
     @property
     def ok(self):

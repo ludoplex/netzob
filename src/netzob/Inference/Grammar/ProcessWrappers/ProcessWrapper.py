@@ -141,9 +141,9 @@ class ProcessWrapper(Thread):
 
     def __str__(self):
         if self.alive() and self.__process_pid is not None:
-            return "{} alive since {} (PID={}, CLI={}) ".format(self.name, self.started_at, self.__process_pid, self.command_line)
+            return f"{self.name} alive since {self.started_at} (PID={self.__process_pid}, CLI={self.command_line}) "
         else:
-            return "{} (CLI={})".format(self.name, self.command_line)
+            return f"{self.name} (CLI={self.command_line})"
     
     def run(self):
         """
@@ -151,14 +151,14 @@ class ProcessWrapper(Thread):
         the execution of the wrapped process
         """
         
-        self._logger.info("Starting process '{}' ({})".format(self.name, self.command_line))
+        self._logger.info(f"Starting process '{self.name}' ({self.command_line})")
 
         args = shlex.split(self.command_line)
-        self.__process = Popen(args, stdout=PIPE, stderr=PIPE, shell=False)            
+        self.__process = Popen(args, stdout=PIPE, stderr=PIPE, shell=False)
         self.__process_pid = self.__process.pid
         self.started_at = datetime.utcnow()
 
-        self._logger.debug("Process {} started (PID={})".format(self.name, self.__process_pid))
+        self._logger.debug(f"Process {self.name} started (PID={self.__process_pid})")
 
         # while not requested to stop (see __flag_stop), it collects
         # stdout and sterr streams
@@ -166,15 +166,13 @@ class ProcessWrapper(Thread):
         streamReader_stderr = NonBlockingStreamReader(self.__process.stderr)
 
         while not self.__flag_stop:
-            output = streamReader_stdout.readline(0.01)
-            if output:
-                self.outputs.append(output)                
+            if output := streamReader_stdout.readline(0.01):
+                self.outputs.append(output)
                 self._logger.info(output.strip())
-            error = streamReader_stderr.readline(0.01)
-            if error:
+            if error := streamReader_stderr.readline(0.01):
                 self._logger.error(error.strip())
                 self.outputs.append(error)
-                
+
         streamReader_stdout.stop()
         streamReader_stderr.stop()
             
@@ -187,22 +185,26 @@ class ProcessWrapper(Thread):
         """
 
         self.__flag_stop = True
-        
-        self._logger.info("Stopping process '{}' (PID={})".format(self.name, self.__process_pid))
+
+        self._logger.info(f"Stopping process '{self.name}' (PID={self.__process_pid})")
 
         if self.__process is not None:
             try:
                 self.__process.kill()
             except Exception as e:
-                self._logger.error("An error occurred while stopping process '{}': {}".format(self.name, e))
+                self._logger.error(
+                    f"An error occurred while stopping process '{self.name}': {e}"
+                )
         else:
-            self._logger.warn("No process named '{}' to stop".format(self.name))
+            self._logger.warn(f"No process named '{self.name}' to stop")
 
-        if self.__process_pid is not None:            
+        if self.__process_pid is not None:        
             os.kill(self.__process_pid, signal.SIGKILL)
-            self._logger.debug("A SIGKILL signal triggered for process '{}' (PID={})".format(self.name, self.__process_pid))
+            self._logger.debug(
+                f"A SIGKILL signal triggered for process '{self.name}' (PID={self.__process_pid})"
+            )
         else:
-            self._logger.warn("No process PID '{}' to stop".format(self.__process_pid))
+            self._logger.warn(f"No process PID '{self.__process_pid}' to stop")
 
         
     def alive(self):
@@ -211,7 +213,4 @@ class ProcessWrapper(Thread):
 
         """
 
-        if self.__process is None:
-            return False
-
-        return self.__process.is_alive()
+        return False if self.__process is None else self.__process.is_alive()

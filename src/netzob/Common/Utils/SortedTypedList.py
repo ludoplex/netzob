@@ -80,7 +80,7 @@ class SortedTypedList(object):
     def __init__(self, membersTypes, elements=None):
         self.membersTypes = membersTypes
         self.__treePriorities = AVLTree()
-        self.__mapMessages = dict()
+        self.__mapMessages = {}
         if elements is not None and len(elements) > 0:
             self._extend(elements)
 
@@ -133,7 +133,7 @@ class SortedTypedList(object):
         for e in elements:
             self._check(e)
 
-        d = dict()
+        d = {}
         for e in elements:
             d[e.priority()] = None
             if e.priority() in self.__mapMessages:

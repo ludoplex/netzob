@@ -100,22 +100,20 @@ class GenericMAT(ActiveKnowledgeBase):
 
         self.process_wrapper.start()
 
-        for nb_attempt in range(10):
+        for _ in range(10):
             if self.process_wrapper.is_ready():
                 break
             time.sleep(1)
 
         # we also try multiple times to open the channel with the target
         channel_is_open = False
-        for nb_attemp in range(10):
+        for _ in range(10):
             try:
                 self.abstraction_layer.openChannel()
                 channel_is_open = True
                 break
             except Exception as e:
-                logging.warn(
-                    "Target is not yet ready (channel cannot be opened): {}".
-                    format(e))
+                logging.warn(f"Target is not yet ready (channel cannot be opened): {e}")
                 time.sleep(1)
 
         if not channel_is_open:
@@ -147,7 +145,7 @@ class GenericMAT(ActiveKnowledgeBase):
                     output_symbols.extend(curr_output_symbols)
                 output_letters.append(Letter(symbols=output_symbols))
             except Exception as e:
-                self._logger.fatal("An error occurred : {}".format(e))
+                self._logger.fatal(f"An error occurred : {e}")
                 output_letters.append(Letter(symbols=[EmptySymbol()]))
 
         for i in range(len(word.letters)):
@@ -162,8 +160,8 @@ class GenericMAT(ActiveKnowledgeBase):
             if output_letter.symbols is not None:
                 output_str = ','.join([s.name for s in output_letter.symbols])
 
-            self._logger.debug(">>> {}".format(input_str))
-            self._logger.debug("<<< {}".format(output_str))
+            self._logger.debug(f">>> {input_str}")
+            self._logger.debug(f"<<< {output_str}")
 
         self.write_cache()
 
@@ -171,8 +169,6 @@ class GenericMAT(ActiveKnowledgeBase):
             try:
                 self.submitted_word_cb(word.letters, output_letters)
             except Exception as e:
-                self._logger.error(
-                    "Error encountered while executed submitted_word_cb: {}".
-                    format(e))
+                self._logger.error(f"Error encountered while executed submitted_word_cb: {e}")
 
         return Word(output_letters, normalize=False)

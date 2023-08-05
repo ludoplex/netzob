@@ -71,9 +71,7 @@ class ChannelDownSymbol(Symbol):
             fields=None, name="ChannelDown Symbol", messages=[self.message])
 
     def __eq__(self, other):
-        if other is None:
-            return False
-        return isinstance(other, ChannelDownSymbol)
+        return False if other is None else isinstance(other, ChannelDownSymbol)
 
     @property
     def message(self):
